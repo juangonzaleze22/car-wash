@@ -1,0 +1,146 @@
+<div class="overflow-x-auto">
+    <p-table [value]="orders()" [loading]="loading()" [paginator]="false"
+        styleClass="p-datatable-striped p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
+        <ng-template pTemplate="header">
+            <tr class="bg-gray-100 dark:bg-gray-700">
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">ID</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Placa</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Cliente</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Tipo</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Estado</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Servicios</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Lavador</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Total</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Pagos</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Fecha</th>
+                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones
+                </th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-order>
+            <tr
+                class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                <td class="py-3 px-4">
+                    <span class="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400">#{{ order.id
+                        }}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-car text-blue-500 dark:text-blue-400"></i>
+                        <span class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ order.vehicle.plate
+                            }}</span>
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{
+                            order.vehicle.client.name }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <i class="pi pi-phone text-[10px]"></i>
+                            {{ order.vehicle.client.phone }}
+                        </span>
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <p-tag [value]="order.vehicle.category" severity="info" styleClass="text-xs"></p-tag>
+                </td>
+                <td class="py-3 px-4">
+                    <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"
+                        styleClass="text-xs"></p-tag>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex flex-col gap-1">
+                        @for (item of order.items; track item.service.name) {
+                        <span
+                            class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded inline-block w-fit">{{
+                            item.service.name }}</span>
+                        }
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    @if (order.items[0] && order.items[0].assignedWasher) {
+                    <div class="flex items-center gap-1.5">
+                        <i class="pi pi-user text-gray-400 dark:text-gray-500 text-xs"></i>
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{
+                            order.items[0].assignedWasher.username }}</span>
+                    </div>
+                    } @else {
+                    <span class="text-xs text-gray-400 dark:text-gray-600 italic">Sin asignar</span>
+                    }
+                </td>
+                <td class="py-3 px-4">
+                    <span class="font-bold text-base text-gray-900 dark:text-gray-100">${{ order.totalAmount |
+                        number:'1.2-2' }}</span>
+                </td>
+                <td class="py-3 px-4">
+                    @if (order.payments && order.payments.length > 0) {
+                    <div class="flex flex-col gap-1">
+                        @for (payment of order.payments; track payment) {
+                        <div class="flex items-center gap-1">
+                            <i class="pi text-xs" [ngClass]="{
+                                            'pi-money-bill text-green-500 dark:text-green-400': payment.method === 'CASH',
+                                            'pi-credit-card text-blue-500 dark:text-blue-400': payment.method === 'CARD',
+                                            'pi-arrow-right-arrow-left text-purple-500 dark:text-purple-400': payment.method === 'TRANSFER'
+                                        }"></i>
+                            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                ${{ payment.amount | number:'1.2-2' }} {{ payment.currency }}
+                            </span>
+                        </div>
+                        }
+                    </div>
+                    } @else {
+                    <span class="text-xs text-gray-400 dark:text-gray-600 italic">Sin pagos</span>
+                    }
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ order.createdAt |
+                            date:'dd/MM/yyyy' }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ order.createdAt | date:'HH:mm'
+                            }}</span>
+                    </div>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex gap-1 justify-center items-center">
+                        <!-- Cancellation Reason Button (if cancelled) -->
+                        @if (order.status === 'CANCELLED' && order.cancellationReason) {
+                        <p-button icon="pi pi-comment" [rounded]="true" [text]="true" severity="secondary" size="small"
+                            pTooltip="Ver motivo de cancelación"
+                            (onClick)="onShowCancellationReason.emit(order)"></p-button>
+                        }
+
+                        <p-button icon="pi pi-eye" [rounded]="true" [text]="true" severity="info" size="small"
+                            pTooltip="Ver detalles" (onClick)="onViewDetail.emit(order)"></p-button>
+                        @if (order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && !isOrderFullyPaid(order)) {
+                        <p-button icon="pi pi-money-bill" [rounded]="true" [text]="true" severity="success" size="small"
+                            pTooltip="Pagar" (onClick)="onProcessPayment.emit(order)"></p-button>
+                        }
+
+                        <!-- Status Change Menu (al final) -->
+                        <p-button icon="pi pi-ellipsis-v" [rounded]="true" [text]="true" severity="secondary"
+                            size="small" pTooltip="Cambiar estado" #statusBtn type="button"
+                            (click)="statusMenu.toggle($event)"></p-button>
+                        <p-menu #statusMenu [model]="getStatusMenuItems(order)" [popup]="true" [appendTo]="'body'">
+                        </p-menu>
+
+                        <!-- Delete Button (Only for Admin) -->
+                        @if (isAdmin()) {
+                        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" size="small"
+                            pTooltip="Eliminar orden" (onClick)="onDelete.emit(order)"></p-button>
+                        }
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="11" class="text-center py-12">
+                    <div class="flex flex-col items-center gap-2">
+                        <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+                        <span class="text-gray-500 dark:text-gray-400 font-medium">No se encontraron órdenes</span>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>

@@ -1,0 +1,412 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  CASHIER
+  WASHER
+}
+
+enum ClientType {
+  PARTICULAR
+  CORPORATE
+}
+
+enum VehicleCategory {
+  MOTO
+  AUTO
+  SUV
+  PICKUP
+  CAMION
+}
+
+model VehicleCategoryModel {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique // Nombre de la categoría (ej: "Auto", "Moto")
+  code        String   @unique // Código único (ej: "AUTO", "MOTO")
+  description String?  // Descripción opcional
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  vehicles Vehicle[]
+  services ServiceCatalog[]
+
+  @@map("vehicle_categories")
+  @@index([code])
+  @@index([active])
+}
+
+enum OrderStatus {
+  RECEIVED
+  IN_PROGRESS
+  QUALITY_CHECK
+  WAITING_PAYMENT
+  COMPLETED
+  CANCELLED
+}
+
+enum DeliveryRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  username  String   @unique
+  name      String?  // Nombre completo opcional
+  password  String
+  role      UserRole
+  active    Boolean  @default(true)
+  
+  // Relations
+  supervisedOrders Order[] @relation("SupervisorOrders")
+  washedItems      OrderItem[] @relation("WasherItems")
+  processedPayments Payment[] @relation("CashierPayments")
+  washerEarnings   WasherEarnings[]
+  createdExpenses  Expense[] @relation("ExpenseCreator")
+  stockMovements   StockMovement[] @relation("UserStockMovements")
+  acceptedDeliveryRequests DeliveryRequest[] @relation("AcceptedDeliveryRequests")
+
+  @@map("users")
+}
+
+model Client {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  phone     String     @unique
+  password  String     @default("$2b$10$2.isVOO1gzwjqpcvUdm7KOms1nsGtnZjLNsV79EbaCusx7G2KikyS") // Password por defecto: "cliente123" hasheado
+  type      ClientType @default(PARTICULAR)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  vehicles Vehicle[]
+  deliveryRequests DeliveryRequest[]
+  locations ClientLocation[]
+
+  @@map("clients")
+}
+
+model ClientLocation {
+  id        String   @id @default(uuid()) @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  name      String   // Ej: "Casa", "Trabajo"
+  address   String   @db.Text
+  latitude  Decimal  @db.Decimal(10, 8)
+  longitude Decimal  @db.Decimal(11, 8)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  client    Client   @relation(fields: [clientId], references: [id])
+
+  @@map("client_locations")
+  @@index([clientId])
+}
+
+model Vehicle {
+  id           String          @id @default(uuid()) @db.Uuid
+  plate        String          @unique
+  category     VehicleCategory // Mantener enum para compatibilidad
+  categoryId   String?         @map("category_id") @db.Uuid // Nueva relación
+  clientId     String          @map("client_id") @db.Uuid
+  notes        String?
+
+  // Relations
+  client       Client              @relation(fields: [clientId], references: [id])
+  categoryRef  VehicleCategoryModel? @relation(fields: [categoryId], references: [id])
+  orders       Order[]
+  deliveryRequests DeliveryRequest[]
+
+  @@map("vehicles")
+  @@index([categoryId])
+}
+
+model ServiceCatalog {
+  id                   String          @id @default(uuid()) @db.Uuid
+  name                 String
+  description          String?         @db.Text // Descripción opcional del servicio
+  categoryTarget       VehicleCategory @map("category_target") // Mantener enum para compatibilidad
+  categoryTargetId     String?         @map("category_target_id") @db.Uuid // Nueva relación
+  price                Decimal         @db.Decimal(10, 2)
+  commissionPercentage Decimal         @map("commission_percentage") @db.Decimal(5, 2)
+  active               Boolean         @default(true)
+
+  // Relations
+  categoryTargetRef    VehicleCategoryModel? @relation(fields: [categoryTargetId], references: [id])
+  orderItems           OrderItem[]
+
+  @@map("service_catalog")
+  @@index([categoryTargetId])
+}
+
+model Order {
+  id                Int         @id @default(autoincrement())
+  uuid              String      @unique @default(uuid()) @db.Uuid
+  vehicleId         String      @map("vehicle_id") @db.Uuid
+  supervisorId      String      @map("supervisor_id") @db.Uuid
+  status            OrderStatus @default(RECEIVED)
+  totalAmount       Decimal     @default(0) @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod     String?     @map("payment_method")
+  changeAmount      Decimal?    @map("change_amount") @db.Decimal(10, 2) // Change given to client
+  changeCurrency    String?     @map("change_currency") // USD or VES
+  changeMethod      String?     @map("change_method") // CASH or TRANSFER - How the change was delivered
+  images            Json?       @default("[]")
+  cancellationReason String?    @map("cancellation_reason") @db.Text // Reason for cancellation
+  createdAt         DateTime    @default(now()) @map("created_at")
+  startedAt         DateTime?   @map("started_at")
+  completedAt       DateTime?   @map("completed_at")
+  deliveryFee       Decimal     @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  duration          Int?        // Duration in minutes
+  closedAt          DateTime?   @map("closed_at")
+
+  // Relations
+  vehicle    Vehicle     @relation(fields: [vehicleId], references: [id])
+  supervisor User        @relation(fields: [supervisorId], references: [id], name: "SupervisorOrders")
+  items      OrderItem[]
+  payments   Payment[]
+  notifications Notification[]
+  washerEarnings WasherEarnings[]
+  deliveryRequest DeliveryRequest? @relation("DeliveryRequestOrder")
+
+  @@map("orders")
+}
+
+model Payment {
+  id           String   @id @default(uuid()) @db.Uuid
+  orderId      Int      @map("order_id")
+  amount       Decimal  @db.Decimal(10, 2)
+  currency     String   // USD, VES
+  method       String   // CASH, CARD, TRANSFER
+  exchangeRate Decimal  @map("exchange_rate") @db.Decimal(10, 2)
+  amountUSD    Decimal  @map("amount_usd") @db.Decimal(10, 2) // Amount converted to USD for easier KPI calculations
+  reference    String?
+  cashierId    String?  @map("cashier_id") @db.Uuid // User who processed the payment
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  order   Order @relation(fields: [orderId], references: [id])
+  cashier User? @relation(fields: [cashierId], references: [id], name: "CashierPayments")
+
+  @@map("payments")
+}
+
+model OrderItem {
+  id               String  @id @default(uuid()) @db.Uuid
+  orderId          Int     @map("order_id")
+  serviceId        String  @map("service_id") @db.Uuid
+  assignedWasherId String? @map("assigned_washer_id") @db.Uuid
+  commissionAmount Decimal @map("commission_amount") @db.Decimal(10, 2)
+
+  // Relations
+  order          Order          @relation(fields: [orderId], references: [id])
+  service        ServiceCatalog @relation(fields: [serviceId], references: [id])
+  assignedWasher User?          @relation(fields: [assignedWasherId], references: [id], name: "WasherItems")
+  washerEarning  WasherEarnings?
+
+  @@map("order_items")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  message   String
+  type      String   // INFO, WARNING, SUCCESS, ERROR
+  role      UserRole? // Optional: if null, it might be for a specific user or global
+  read      Boolean  @default(false)
+  orderId   Int?     @map("order_id")
+  deliveryRequestId String? @map("delivery_request_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  order     Order?   @relation(fields: [orderId], references: [id])
+  deliveryRequest DeliveryRequest? @relation(fields: [deliveryRequestId], references: [id])
+
+  @@map("notifications")
+}
+
+enum WasherEarningStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  RENT
+  PRODUCTS
+  UTILITIES
+  SALARIES
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+model WasherEarnings {
+  id               String              @id @default(uuid()) @db.Uuid
+  orderItemId      String              @unique @map("order_item_id") @db.Uuid
+  washerId         String              @map("washer_id") @db.Uuid
+  orderId          Int                 @map("order_id")
+  commissionAmount Decimal             @map("commission_amount") @db.Decimal(10, 2)
+  status           WasherEarningStatus @default(PENDING)
+  earnedAt         DateTime            @default(now()) @map("earned_at")
+  paidAt           DateTime?           @map("paid_at")
+
+  // Relations
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+  washer    User      @relation(fields: [washerId], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id])
+
+  @@index([washerId])
+  @@index([orderId])
+  @@index([status])
+  @@index([earnedAt])
+  @@map("washer_earnings")
+}
+
+model Expense {
+  id          String         @id @default(uuid()) @db.Uuid
+  description String
+  category    ExpenseCategory
+  amount      Decimal        @db.Decimal(10, 2)
+  currency    String         // USD, VES
+  exchangeRate Decimal?      @map("exchange_rate") @db.Decimal(10, 2)
+  amountUSD   Decimal        @map("amount_usd") @db.Decimal(10, 2) // Amount converted to USD for easier KPI calculations
+  notes       String?        @db.Text
+  createdById String         @map("created_by_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  
+  // Recurrence fields
+  isRecurring Boolean        @default(false) @map("is_recurring")
+  recurrenceFrequency RecurrenceFrequency? @map("recurrence_frequency")
+  recurrenceStartDate DateTime? @map("recurrence_start_date") // Date when recurrence should start
+  recurrenceTemplateId String? @map("recurrence_template_id") @db.Uuid // Reference to the original template expense
+  nextDueDate DateTime?      @map("next_due_date") // Next date when this expense should be generated
+
+  // Relations
+  createdBy User @relation(fields: [createdById], references: [id], name: "ExpenseCreator")
+  recurrenceTemplate Expense? @relation("RecurrenceTemplate", fields: [recurrenceTemplateId], references: [id])
+  generatedExpenses Expense[] @relation("RecurrenceTemplate")
+  stockMovements StockMovement[]
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([isRecurring])
+  @@index([nextDueDate])
+  @@index([recurrenceTemplateId])
+  @@map("expenses")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  unit        String   // Ej: "LITROS", "UNIDADES", "GALONES"
+  minStock    Decimal  @default(0) @map("min_stock") @db.Decimal(10, 2)
+  currentStock Decimal @default(0) @map("current_stock") @db.Decimal(10, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  movements   StockMovement[]
+  
+  @@map("products")
+}
+
+model StockMovement {
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  type        String   // "IN" (Entrada/Compra), "OUT" (Salida/Uso), "ADJUST" (Corrección), "DAILY_CHECK" (Ajuste Diario)
+  quantity    Decimal  @db.Decimal(10, 2) // Cantidad movida (+ o -)
+  previousStock Decimal @map("previous_stock") @db.Decimal(10, 2) // Stock antes del movimiento
+  newStock    Decimal  @map("new_stock") @db.Decimal(10, 2) // Stock después del movimiento
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdById String?  @map("created_by_id") @db.Uuid
+  
+  // Opcional: Vincular con un gasto si fue una compra
+  expenseId   String?  @map("expense_id") @db.Uuid
+  
+  product     Product  @relation(fields: [productId], references: [id])
+  expense     Expense? @relation(fields: [expenseId], references: [id])
+  createdBy   User?    @relation(fields: [createdById], references: [id], name: "UserStockMovements")
+  
+  @@map("stock_movements")
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model DeliveryRequest {
+  id                String                @id @default(uuid()) @db.Uuid
+  clientId          String                @map("client_id") @db.Uuid
+  vehicleId         String                @map("vehicle_id") @db.Uuid
+  status            DeliveryRequestStatus @default(PENDING)
+  
+  // Ubicación
+  address           String                @db.Text // Dirección completa
+  latitude          Decimal               @db.Decimal(10, 8) // Coordenada latitud
+  longitude         Decimal               @db.Decimal(11, 8) // Coordenada longitud
+  
+  // Servicios seleccionados (JSON array de service IDs)
+  services          Json                  // Array de objetos {serviceId, name, price}
+  deliveryFee       Decimal               @default(0) @map("delivery_fee") @db.Decimal(10, 2)
+  totalAmount       Decimal               @map("total_amount") @db.Decimal(10, 2)
+  
+  // Información adicional
+  notes             String?               @db.Text // Notas del cliente
+  cancellationReason String?             @map("cancellation_reason") @db.Text
+  
+  // Aceptación/Conversión
+  acceptedById      String?               @map("accepted_by_id") @db.Uuid // Supervisor que aceptó
+  acceptedAt        DateTime?             @map("accepted_at")
+  convertedToOrderId Int?                 @unique @map("converted_to_order_id") // Si se convirtió en orden
+  
+  // Timestamps
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  client            Client                @relation(fields: [clientId], references: [id])
+  vehicle           Vehicle               @relation(fields: [vehicleId], references: [id])
+  acceptedBy        User?                 @relation(fields: [acceptedById], references: [id], name: "AcceptedDeliveryRequests")
+  convertedToOrder  Order?                @relation("DeliveryRequestOrder", fields: [convertedToOrderId], references: [id])
+  notifications     Notification[]
+
+  @@map("delivery_requests")
+  @@index([clientId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([acceptedById])
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique // e.g., "DELIVERY_FEE"
+  value       String   // Values will be stored as strings
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("system_configs")
+}

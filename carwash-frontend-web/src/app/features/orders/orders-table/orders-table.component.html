@@ -1,0 +1,138 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Registro de Órdenes</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Gestión y consulta de todas las órdenes del sistema</p>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-4">
+        <h3
+            class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="pi pi-filter"></i>
+            FILTROS DE BÚSQUEDA
+        </h3>
+        <div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Status Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Estado</label>
+                    <p-dropdown [options]="statusOptions" [(ngModel)]="filters().status" (onChange)="onFilterChange()"
+                        optionLabel="label" optionValue="value" styleClass="w-full"
+                        placeholder="Todos los estados"></p-dropdown>
+                </div>
+
+                <!-- Plate Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Placa</label>
+                    <span class="p-input-icon-left w-full block">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" [ngModel]="filters().plate" (input)="onPlateInputChange($event)"
+                            placeholder="Buscar por placa..." class="w-full" />
+                    </span>
+                </div>
+
+                <!-- Client Name Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Cliente</label>
+                    <span class="p-input-icon-left w-full block">
+                        <i class="pi pi-search"></i>
+                        <input pInputText type="text" [ngModel]="filters().clientName"
+                            (input)="onClientNameInputChange($event)" placeholder="Buscar por cliente..."
+                            class="w-full" />
+                    </span>
+                </div>
+
+                <!-- Vehicle Category Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Tipo de
+                        Vehículo</label>
+                    <p-dropdown [options]="vehicleCategoryOptions" [(ngModel)]="filters().vehicleCategory"
+                        (onChange)="onFilterChange()" optionLabel="label" optionValue="value" styleClass="w-full"
+                        placeholder="Todos los tipos"></p-dropdown>
+                </div>
+
+                <!-- Washer Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Lavador</label>
+                    <p-dropdown [options]="washerOptions()" [(ngModel)]="filters().washerId"
+                        (onChange)="onFilterChange()" optionLabel="username" optionValue="id" styleClass="w-full"
+                        placeholder="Todos los lavadores" [disabled]="washerOptions().length === 0"></p-dropdown>
+                </div>
+
+                <!-- Service Filter -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Servicio</label>
+                    <p-dropdown [options]="serviceOptions()" [(ngModel)]="filters().serviceId"
+                        (onChange)="onFilterChange()" optionLabel="name" optionValue="id" styleClass="w-full"
+                        placeholder="Todos los servicios" [disabled]="serviceOptions().length === 0"></p-dropdown>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-end gap-2">
+                    <p-button label="Filtrar" icon="pi pi-filter" (onClick)="applyFilters()"
+                        styleClass="w-full"></p-button>
+                    <p-button label="Limpiar" icon="pi pi-times" severity="secondary" (onClick)="clearFilters()"
+                        [text]="true"></p-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div
+            class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3
+                class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-list"></i>
+                LISTA DE ÓRDENES
+            </h3>
+            <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" pTooltip="Actualizar"
+                (onClick)="loadOrders()"></p-button>
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block">
+            <app-orders-table-view [orders]="orders()" [loading]="loading()" [isAdmin]="isAdmin()"
+                (onViewDetail)="showOrderDetail($event)" (onProcessPayment)="processPayment($event)"
+                (onStatusChange)="onStatusChange($event)" (onShowCancellationReason)="showCancellationReason($event)"
+                (onDelete)="deleteOrder($event)">
+            </app-orders-table-view>
+        </div>
+
+        <!-- Tablet/Mobile Cards View -->
+        <div class="lg:hidden">
+            <app-orders-cards-view [orders]="orders()" [loading]="loading()" [isAdmin]="isAdmin()"
+                (onViewDetail)="showOrderDetail($event)" (onProcessPayment)="processPayment($event)"
+                (onStatusChange)="onStatusChange($event)" (onShowCancellationReason)="showCancellationReason($event)"
+                (onDelete)="deleteOrder($event)">
+            </app-orders-cards-view>
+        </div>
+
+        <!-- Pagination -->
+        <app-pagination-wrapper [pagination]="pagination()" [rowsPerPageOptions]="[10, 20, 50, 100]"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} órdenes"
+            (onPageChange)="onPageChange($event)">
+        </app-pagination-wrapper>
+    </div>
+</div>
+
+<!-- Order Detail Modal -->
+<app-order-detail-modal [order]="selectedOrder()" [visible]="displayDetailDialog()"
+    (onClose)="displayDetailDialog.set(false)">
+</app-order-detail-modal>
+
+<!-- Payment Modal -->
+<app-process-payment-modal [order]="selectedOrderForPayment()" [visible]="displayPaymentModal()"
+    (onClose)="onPaymentClose()" (onPaymentSuccess)="onPaymentSuccess($event)">
+</app-process-payment-modal>
+
+<!-- Cancel Order Modal -->
+<app-cancel-order-modal [visible]="displayCancelModal()" [order]="selectedOrderForCancel()"
+    (onCancel)="confirmCancelOrder($event)" (onClose)="displayCancelModal.set(false)">
+</app-cancel-order-modal>

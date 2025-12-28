@@ -1,0 +1,383 @@
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <p-toast></p-toast>
+
+    <!-- Header Compacto -->
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Nuevo Ingreso</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Registro rápido de vehículo</p>
+        </div>
+        @if (getSelectedServicesCount() > 0) {
+            <div class="flex gap-6 items-center bg-gray-100 dark:bg-gray-700/50 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Servicios</span>
+                    <span class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ getSelectedServicesCount() }}</span>
+                </div>
+                <div class="w-px h-8 bg-gray-200 dark:bg-gray-600"></div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total</span>
+                    <div class="flex flex-col items-end">
+                        <span class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatUSD(getEstimatedTotal()) }}</span>
+                        @if (exchangeRate() > 0) {
+                            <span class="text-sm font-semibold text-gray-500 dark:text-gray-400">{{ formatVES(getEstimatedTotalVES()) }}</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <form [formGroup]="checkInForm" (ngSubmit)="onSubmit()">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+            <!-- Columna Principal -->
+            <div class="flex flex-col gap-6">
+                <!-- Sección 1: Vehículo y Cliente (Compacta) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-2 px-6 py-4 bg-gray-100 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700 rounded-t-[15px]">
+                        <i class="pi pi-car text-blue-600 dark:text-blue-400"></i>
+                        <span class="font-bold text-gray-800 dark:text-white uppercase text-sm tracking-wide">Vehículo y Cliente</span>
+                    </div>
+                    
+                    <div class="p-6 flex flex-col gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-4">
+                            <!-- Placa -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <i class="pi pi-id-card text-gray-400"></i>
+                                    Placa <span class="text-red-500">*</span>
+                                </label>
+                                <p-autoComplete 
+                                    formControlName="plate" 
+                                    [suggestions]="vehicleSuggestions()"
+                                    (completeMethod)="searchVehicles($event)" 
+                                    (onSelect)="onVehicleSelect($event)" 
+                                    field="plate"
+                                    placeholder="ABC-123" 
+                                    [minLength]="2" 
+                                    [forceSelection]="false"
+                                    styleClass="w-full uppercase-input"
+                                    inputStyleClass="uppercase w-full font-mono font-bold">
+                                    <ng-template let-vehicle pTemplate="item">
+                                        <div class="flex items-center gap-3 p-2">
+                                            <i class="pi pi-car text-gray-400"></i>
+                                            <div>
+                                                <div class="font-bold text-gray-800">{{ vehicle.plate }}</div>
+                                                <div class="text-xs text-gray-500">{{ vehicle.client?.name }} · {{ vehicle.categoryRef?.name || vehicle.category }}</div>
+                                            </div>
+                                        </div>
+                                    </ng-template>
+                                </p-autoComplete>
+                                @if (selectedVehicle()) {
+                                    <small class="text-green-600 dark:text-green-400 text-xs flex items-center gap-1 font-medium">
+                                        <i class="pi pi-check-circle"></i>
+                                        Vehículo encontrado - Datos cargados
+                                    </small>
+                                } @else if (checkInForm.value.plate && checkInForm.value.plate.length >= 3) {
+                                    <small class="text-blue-600 dark:text-blue-400 text-xs flex items-center gap-1 font-medium">
+                                        <i class="pi pi-info-circle"></i>
+                                        Vehículo nuevo - Complete los datos
+                                    </small>
+                                }
+                            </div>
+
+                            <!-- Tipo de Vehículo -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <i class="pi pi-tag text-gray-400"></i>
+                                    Tipo <span class="text-red-500">*</span>
+                                </label>
+                                <p-dropdown 
+                                    [options]="vehicleCategories()" 
+                                    formControlName="categoryId"
+                                    (onChange)="onCategoryChange($event.value)"
+                                    optionLabel="name" 
+                                    optionValue="id"
+                                    placeholder="Seleccione tipo"
+                                    styleClass="w-full">
+                                </p-dropdown>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-4">
+                            <!-- Cliente -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <i class="pi pi-user text-gray-400"></i>
+                                    Cliente
+                                </label>
+                                <p-autoComplete 
+                                    formControlName="clientName" 
+                                    [suggestions]="clientSuggestions()"
+                                    (completeMethod)="searchClients($event)" 
+                                    (onSelect)="onClientSelect($event)" 
+                                    field="name"
+                                    placeholder="Nombre del cliente" 
+                                    [minLength]="2" 
+                                    [forceSelection]="false"
+                                    styleClass="w-full"
+                                    inputStyleClass="w-full">
+                                    <ng-template let-client pTemplate="item">
+                                        <div class="p-2">
+                                            <div class="font-bold text-gray-800">{{ client.name }}</div>
+                                            <div class="text-xs text-gray-500">{{ client.phone }}</div>
+                                        </div>
+                                    </ng-template>
+                                </p-autoComplete>
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    <i class="pi pi-phone text-gray-400"></i>
+                                    Teléfono
+                                </label>
+                                <p-inputMask 
+                                    mask="(9999) 999 9999" 
+                                    formControlName="clientPhone" 
+                                    placeholder="(0412) 123 4567"
+                                    styleClass="w-full"
+                                    inputStyleClass="w-full">
+                                </p-inputMask>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Servicios (Filtrados por tipo) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 bg-gray-100 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-list-check text-blue-600 dark:text-blue-400"></i>
+                            <span class="font-bold text-gray-800 dark:text-white uppercase text-sm tracking-wide">Servicios <span class="text-red-500">*</span></span>
+                        </div>
+                        @if (filteredServices().length === 0 && checkInForm.value.categoryId) {
+                            <span class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 px-3 py-1 rounded-full text-xs font-bold">
+                                Sin servicios para este tipo
+                            </span>
+                        }
+                    </div>
+                    
+                    <div class="p-6">
+                        @if (filteredServices().length > 0) {
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                @for (service of filteredServices(); track service.id) {
+                                    <div 
+                                        [ngClass]="{
+                                            'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500': isServiceSelected(service.id),
+                                            'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700': !isServiceSelected(service.id)
+                                        }"
+                                        class="relative flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 group"
+                                        (click)="onServiceClick(service.id)">
+                                        
+                                        <div [ngClass]="{
+                                            'text-blue-600 dark:text-blue-400': isServiceSelected(service.id),
+                                            'text-gray-300 dark:text-gray-600': !isServiceSelected(service.id)
+                                        }" class="text-xl flex-shrink-0 transition-colors">
+                                            <i [class]="isServiceSelected(service.id) ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                                        </div>
+                                        
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm mb-1 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">{{ service.name }}</div>
+                                            <div class="flex flex-col">
+                                                <div class="font-bold text-green-600 dark:text-green-400">{{ formatUSD(service.price) }}</div>
+                                                @if (exchangeRate() > 0) {
+                                                    <div class="text-xs font-semibold text-gray-500 dark:text-gray-400">{{ formatVES(convertToVES(service.price)) }}</div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        } @else if (checkInForm.value.categoryId) {
+                            <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
+                                <i class="pi pi-info-circle text-4xl mb-3 opacity-50"></i>
+                                <p>No hay servicios disponibles para este tipo de vehículo</p>
+                            </div>
+                        } @else {
+                            <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                                <i class="pi pi-exclamation-triangle text-4xl mb-3 opacity-50"></i>
+                                <p class="font-medium">Seleccione un tipo de vehículo para ver los servicios disponibles</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Sección 3: Lavador (Compacta) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="flex items-center gap-2 px-6 py-4 bg-gray-100 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+                        <i class="pi pi-users text-blue-600 dark:text-blue-400"></i>
+                        <span class="font-bold text-gray-800 dark:text-white uppercase text-sm tracking-wide">Asignar Lavador <span class="font-normal text-gray-400 lowercase ml-1">(Opcional)</span></span>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                            <div 
+                                [ngClass]="{
+                                    'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500': !checkInForm.get('assignedWasherId')?.value,
+                                    'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800': checkInForm.get('assignedWasherId')?.value
+                                }"
+                                class="flex flex-col items-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                                (click)="assignWasher(null)">
+                                <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center text-xl">
+                                    <i class="pi pi-user-minus"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-center text-gray-700 dark:text-gray-300">Sin asignar</span>
+                            </div>
+                            
+                            @for (washer of washers(); track washer.id) {
+                                <div 
+                                    [ngClass]="{
+                                        'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500': checkInForm.get('assignedWasherId')?.value === washer.id,
+                                        'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800': checkInForm.get('assignedWasherId')?.value !== washer.id
+                                    }"
+                                    class="flex flex-col items-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                                    (click)="assignWasher(washer.id)">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-sm">
+                                        {{ washer.username.charAt(0).toUpperCase() }}
+                                    </div>
+                                    <span class="text-xs font-semibold text-center text-gray-700 dark:text-gray-300 truncate w-full">{{ washer.username }}</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Imágenes (Opcional, Compacta) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 bg-gray-100 dark:bg-gray-700/30 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-image text-blue-600 dark:text-blue-400"></i>
+                            <span class="font-bold text-gray-800 dark:text-white uppercase text-sm tracking-wide">Fotos del Vehículo <span class="font-normal text-gray-400 lowercase ml-1">(Opcional)</span></span>
+                        </div>
+                        @if (uploadedFiles().length > 0) {
+                            <span class="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold">{{ uploadedFiles().length }} foto(s)</span>
+                        }
+                    </div>
+                    
+                    <div class="p-6">
+                        <input 
+                            #fileInput
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            (change)="onFileInputChange($event)"
+                            class="hidden" />
+                        
+                        @if (uploadedFiles().length > 0) {
+                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 mb-4">
+                                @for (file of uploadedFiles(); track $index) {
+                                    <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm group">
+                                        <img [src]="getImagePreview(file)" [alt]="file.name" class="w-full h-full object-cover" />
+                                        <button 
+                                            type="button"
+                                            (click)="removeImage($index)"
+                                            class="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600">
+                                            <i class="pi pi-times text-xs"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        
+                        <div 
+                            (click)="openFileDialog()"
+                            (dragover)="onDragOver($event)"
+                            (dragleave)="onDragLeave($event)"
+                            (drop)="onDrop($event)"
+                            class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800/50 cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group">
+                            <div class="w-16 h-16 bg-white dark:bg-gray-700 rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                                <i class="pi pi-cloud-upload text-2xl text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"></i>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-1 text-center">Arrastra imágenes aquí o <span class="text-blue-600 dark:text-blue-400 font-bold hover:underline">haz clic para seleccionar</span></p>
+                            <small class="text-xs text-gray-400 dark:text-gray-500">JPG, PNG, WEBP (máx. 5MB)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Columna Lateral: Resumen Sticky -->
+            <div class="relative">
+                <div class="sticky top-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden ring-1 ring-black/5 dark:ring-white/5">
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center gap-2 text-white">
+                        <i class="pi pi-receipt"></i>
+                        <span class="font-bold uppercase tracking-wide text-sm">Resumen</span>
+                    </div>
+                    
+                    <div class="p-6 flex flex-col gap-6">
+                        <!-- Validaciones -->
+                        <div class="flex flex-col gap-3 pb-6 border-b border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center gap-2 text-sm transition-colors" [class.text-green-500]="checkInForm.get('plate')?.valid" [class.text-gray-400]="!checkInForm.get('plate')?.valid">
+                                <i [class]="checkInForm.get('plate')?.valid ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                                <span class="font-medium">Placa ingresada</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm transition-colors" [class.text-green-500]="checkInForm.get('categoryId')?.valid" [class.text-gray-400]="!checkInForm.get('categoryId')?.valid">
+                                <i [class]="checkInForm.get('categoryId')?.valid ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                                <span class="font-medium">Tipo seleccionado</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm transition-colors" [class.text-green-500]="getSelectedServicesCount() > 0" [class.text-gray-400]="getSelectedServicesCount() === 0">
+                                <i [class]="getSelectedServicesCount() > 0 ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                                <span class="font-medium">Servicios seleccionados</span>
+                            </div>
+                        </div>
+
+                        <!-- Servicios Seleccionados -->
+                        @if (getSelectedServicesCount() > 0) {
+                            <div class="flex flex-col gap-3">
+                                <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Servicios Seleccionados</div>
+                                <div class="flex flex-col gap-2">
+                                    @for (serviceId of checkInForm.value.services; track serviceId) {
+                                        @if (getServiceById(serviceId)) {
+                                            <div class="flex justify-between items-center text-sm">
+                                                <span class="text-gray-700 dark:text-gray-300 truncate pr-2">{{ getServiceById(serviceId)!.name }}</span>
+                                                <div class="flex flex-col items-end">
+                                                    <span class="font-bold text-green-600 dark:text-green-400 whitespace-nowrap">{{ formatUSD(getServiceById(serviceId)!.price) }}</span>
+                                                    @if (exchangeRate() > 0) {
+                                                        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ formatVES(convertToVES(getServiceById(serviceId)!.price)) }}</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Total -->
+                        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30 text-center">
+                            <div class="text-xs font-bold text-green-700 dark:text-green-300 uppercase mb-1">Total Estimado</div>
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{ formatUSD(getEstimatedTotal()) }}</div>
+                                @if (exchangeRate() > 0) {
+                                    <div class="text-lg font-semibold text-gray-600 dark:text-gray-400">{{ formatVES(getEstimatedTotalVES()) }}</div>
+                                } @else if (loadingExchangeRate()) {
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                        <i class="pi pi-spin pi-spinner text-xs"></i>
+                                        <span>Cargando tasa...</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="flex flex-col gap-3">
+                            <p-button 
+                                label="Limpiar"
+                                icon="pi pi-times"
+                                (onClick)="onCancel()"
+                                styleClass="w-full"
+                                severity="secondary"
+                                [outlined]="true"></p-button>
+                            <p-button 
+                                label="Crear Orden"
+                                icon="pi pi-check"
+                                type="submit"
+                                [loading]="loading()"
+                                [disabled]="!isFormValid() || loading()"
+                                styleClass="w-full"
+                                [loadingIcon]="'pi pi-spin pi-spinner'"></p-button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

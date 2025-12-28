@@ -1,0 +1,31 @@
+.exchange-rates-marquee {
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.marquee-content {
+    display: flex;
+    animation: scroll 30s linear infinite;
+    width: max-content;
+}
+
+.marquee-content:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-33.333%);
+    }
+}
+
+/* Asegurar que cada repetición ocupe el mismo espacio */
+.marquee-content > div {
+    flex-shrink: 0;
+}
+

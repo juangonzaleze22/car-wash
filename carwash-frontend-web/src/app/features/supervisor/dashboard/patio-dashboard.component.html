@@ -1,0 +1,435 @@
+<p-toast></p-toast>
+
+<p-dialog header="Seleccionar Lavador" [(visible)]="displayWasherDialog" [modal]="true" [style]="{width: '90vw', maxWidth: '600px'}"
+    [closable]="false" styleClass="rounded-xl overflow-hidden">
+    <div class="flex flex-col gap-4 pt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-1">
+            @for (washer of washers(); track washer.id) {
+            <div (click)="selectedWasher.set(washer)"
+                class="cursor-pointer border rounded-lg p-3 transition-all hover:shadow-md flex items-center gap-3"
+                [ngClass]="{'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800': selectedWasher()?.id === washer.id, 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600': selectedWasher()?.id !== washer.id}">
+
+                <div class="w-10 h-10 min-w-10 min-h-10 flex-shrink-0 rounded-full flex items-center justify-center text-lg font-bold"
+                    [ngClass]="{'bg-blue-500 text-white': selectedWasher()?.id === washer.id, 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300': selectedWasher()?.id !== washer.id}">
+                    {{ washer.username.charAt(0).toUpperCase() }}
+                </div>
+
+                <div class="flex flex-col">
+                    <span class="font-semibold text-gray-800 dark:text-gray-200"
+                        [ngClass]="{'text-blue-700 dark:text-blue-400': selectedWasher()?.id === washer.id}">{{ washer.username }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Lavador</span>
+                </div>
+
+                <div *ngIf="selectedWasher()?.id === washer.id" class="ml-auto">
+                    <i class="pi pi-check-circle text-blue-500 dark:text-blue-400 text-xl"></i>
+                </div>
+            </div>
+            }
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+            <p-button label="Cancelar" icon="pi pi-times" (onClick)="cancelWasherAssignment()"
+                styleClass="p-button-text p-button-secondary"></p-button>
+            <p-button label="Asignar Lavador" icon="pi pi-check" (onClick)="confirmWasherAssignment()"
+                [disabled]="!selectedWasher()"></p-button>
+        </div>
+    </div>
+</p-dialog>
+
+<!-- Order Detail Modal -->
+<app-order-detail-modal
+    [order]="selectedOrderDetail()"
+    [visible]="displayDetailDialog()"
+    (onClose)="displayDetailDialog.set(false)">
+</app-order-detail-modal>
+
+<!-- Dashboard Grid -->
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Dashboard de Patio</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Gestión y seguimiento de órdenes en tiempo real</p>
+        </div>
+        <div class="flex gap-2">
+            <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" (onClick)="loadOrders()"
+                pTooltip="Actualizar"></p-button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
+
+        <!-- Column: Received -->
+        <div class="flex flex-col h-full bg-gray-100/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 overflow-hidden">
+            <div class="p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center sticky top-0 z-10">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span class="font-bold text-gray-700 dark:text-gray-300">En Espera</span>
+                </div>
+                <span
+                    class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-0.5 rounded-full text-xs font-bold border border-blue-100 dark:border-blue-800">
+                    {{ receivedOrders().length }}
+                </span>
+            </div>
+
+            <div cdkDropList #receivedList="cdkDropList" [cdkDropListData]="receivedOrders()"
+                [cdkDropListConnectedTo]="[inProgressList]" (cdkDropListDropped)="onDrop($event, 'RECEIVED')"
+                class="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
+
+                @for (order of receivedOrders(); track order.id) {
+                <div cdkDrag
+                    class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all group relative">
+                    <!-- Status Change Menu -->
+                    <div class="absolute top-2 right-2">
+                        <p-button 
+                            icon="pi pi-ellipsis-v" 
+                            [rounded]="true" 
+                            [text]="true"
+                            severity="secondary"
+                            size="small"
+                            styleClass="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                            #statusMenuBtn
+                            (onClick)="statusMenu.toggle($event)"
+                            (click)="$event.stopPropagation()"></p-button>
+                        <p-menu 
+                            #statusMenu 
+                            [model]="getStatusMenuItems(order)"
+                            [popup]="true"
+                            [appendTo]="'body'">
+                        </p-menu>
+                    </div>
+
+                    <!-- Header: Order ID, Vehicle Type -->
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-base text-gray-900 dark:text-gray-100">#{{ order.id }}</span>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{
+                                order.vehicle?.category }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer (static - order not in progress) -->
+                    <div class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 font-semibold mb-3">
+                        <i class="pi pi-clock text-[10px]"></i>
+                        <span>{{ getElapsedTime(order) | elapsedTime }}</span>
+                        <!-- Force update when status changes (but not continuously) -->
+                        <span style="display: none;">{{ order.status }}{{ order.completedAt }}</span>
+                    </div>
+
+                    <!-- Client and Washer Row -->
+                    <div class="flex justify-between items-center mb-3">
+                        <!-- Client -->
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-semibold">
+                                {{ (order.vehicle?.client?.name || 'C')[0].toUpperCase() }}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Cliente</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ order.vehicle?.client?.name ||
+                                    'Cliente General' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Washer -->
+                        <div class="flex items-center gap-2" (click)="$event.stopPropagation()">
+                            @if (getWasherName(order) !== 'Por asignar') {
+                            <div class="flex items-center gap-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded"
+                                (click)="openAssignWasherDialog(order)">
+                                <i class="pi pi-user text-blue-500 dark:text-blue-400 text-sm"></i>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Lavador</span>
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ getWasherName(order) }}</span>
+                                </div>
+                            </div>
+                            } @else {
+                            <button pButton label="Asignar" icon="pi pi-plus" class="p-button-sm p-button-outlined"
+                                (click)="openAssignWasherDialog(order)"></button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Footer: Photos, Details and Payment Buttons -->
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+                        @if (order.images && order.images.length > 0) {
+                        <div class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                            <i class="pi pi-camera text-gray-400 dark:text-gray-500"></i>
+                            <span>{{ order.images.length }} Foto{{ order.images.length > 1 ? 's' : '' }}</span>
+                        </div>
+                        } @else {
+                        <div></div>
+                        }
+                        <div class="flex gap-2">
+                            <p-button label="Detalles" icon="pi pi-eye" 
+                                (onClick)="showOrderDetail(order)" [text]="true" size="small"></p-button>
+                            @if (!isOrderFullyPaid(order)) {
+                                <p-button label="Pagar" icon="pi pi-money-bill" 
+                                    (onClick)="openPaymentModal(order)" 
+                                    styleClass="bg-green-600 border-green-600 hover:bg-green-700" 
+                                    size="small"></p-button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                }
+
+                @if (receivedOrders().length === 0) {
+                <div
+                    class="flex flex-col items-center justify-center h-32 text-gray-400 dark:text-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg m-2">
+                    <i class="pi pi-inbox text-2xl mb-2 opacity-50"></i>
+                    <span class="text-sm">Sin vehículos</span>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Column: In Progress -->
+        <div class="flex flex-col h-full bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/60 dark:border-blue-800/60 overflow-hidden">
+            <div class="p-4 bg-white dark:bg-gray-800 border-b border-blue-100 dark:border-blue-800 flex justify-between items-center sticky top-0 z-10">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-orange-500 animate-pulse"></div>
+                    <span class="font-bold text-gray-700 dark:text-gray-300">En Proceso</span>
+                </div>
+                <span
+                    class="bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2.5 py-0.5 rounded-full text-xs font-bold border border-orange-100 dark:border-orange-800">
+                    {{ inProgressOrders().length }}
+                </span>
+            </div>
+
+            <div cdkDropList #inProgressList="cdkDropList" [cdkDropListData]="inProgressOrders()"
+                [cdkDropListConnectedTo]="[receivedList, readyList]"
+                (cdkDropListDropped)="onDrop($event, 'IN_PROGRESS')"
+                class="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
+
+                @for (order of inProgressOrders(); track order.id) {
+                <div cdkDrag
+                    class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 border-l-orange-500 border-y border-r border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all group relative">
+                    <!-- Status Change Menu -->
+                    <div class="absolute top-2 right-2">
+                        <p-button 
+                            icon="pi pi-ellipsis-v" 
+                            [rounded]="true" 
+                            [text]="true"
+                            severity="secondary"
+                            size="small"
+                            styleClass="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                            #statusMenuBtn2
+                            (onClick)="statusMenu2.toggle($event)"
+                            (click)="$event.stopPropagation()"></p-button>
+                        <p-menu 
+                            #statusMenu2 
+                            [model]="getStatusMenuItems(order)"
+                            [popup]="true"
+                            [appendTo]="'body'">
+                        </p-menu>
+                    </div>
+
+                    <!-- Header: Order ID, Vehicle Type -->
+                    <div class="flex items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-base text-gray-900 dark:text-gray-100">#{{ order.id }}</span>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{
+                                order.vehicle?.category }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer (active - counting in real-time) -->
+                    <div class="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 font-semibold mb-3">
+                        <i class="pi pi-clock text-[10px]"></i>
+                        <span>{{ getElapsedTime(order) | elapsedTime }}</span>
+                        <!-- Force change detection with timerTick signal - updates every second -->
+                        <span style="display: none;">{{ timerTick() }}</span>
+                    </div>
+
+                    <!-- Client and Washer Row -->
+                    <div class="flex justify-between items-center mb-3">
+                        <!-- Client -->
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-semibold">
+                                {{ (order.vehicle?.client?.name || 'C')[0].toUpperCase() }}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Cliente</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ order.vehicle?.client?.name ||
+                                    'Cliente General' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Washer -->
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-user text-orange-500 dark:text-orange-400 text-sm"></i>
+                            <div class="flex flex-col items-end">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Lavador</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ getWasherName(order) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Photos, Details and Payment Buttons -->
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+                        @if (order.images && order.images.length > 0) {
+                        <div class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                            <i class="pi pi-camera text-gray-400 dark:text-gray-500"></i>
+                            <span>{{ order.images.length }} Foto{{ order.images.length > 1 ? 's' : '' }}</span>
+                        </div>
+                        } @else {
+                        <div></div>
+                        }
+                        <div class="flex gap-2">
+                            <p-button label="Detalles" icon="pi pi-eye" 
+                                (onClick)="showOrderDetail(order)" [text]="true" size="small"></p-button>
+                            @if (!isOrderFullyPaid(order)) {
+                                <p-button label="Pagar" icon="pi pi-money-bill" 
+                                    (onClick)="openPaymentModal(order)" 
+                                    styleClass="bg-green-600 border-green-600 hover:bg-green-700" 
+                                    size="small"></p-button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                }
+
+                @if (inProgressOrders().length === 0) {
+                <div
+                    class="flex flex-col items-center justify-center h-32 text-gray-400 dark:text-gray-600 border-2 border-dashed border-blue-100 dark:border-blue-800 rounded-lg m-2 bg-blue-50/20 dark:bg-blue-900/10">
+                    <i class="pi pi-cog text-2xl mb-2 opacity-50"></i>
+                    <span class="text-sm">Zona libre</span>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Column: Ready -->
+        <div class="flex flex-col h-full bg-green-50/30 dark:bg-green-900/10 rounded-xl border border-green-100/60 dark:border-green-800/60 overflow-hidden">
+            <div class="p-4 bg-white dark:bg-gray-800 border-b border-green-100 dark:border-green-800 flex justify-between items-center sticky top-0 z-10">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="font-bold text-gray-700 dark:text-gray-300">Listo / Por Cobrar</span>
+                </div>
+                <span
+                    class="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2.5 py-0.5 rounded-full text-xs font-bold border border-green-100 dark:border-green-800">
+                    {{ readyOrders().length }}
+                </span>
+            </div>
+
+            <div cdkDropList #readyList="cdkDropList" [cdkDropListData]="readyOrders()"
+                [cdkDropListConnectedTo]="[inProgressList]" (cdkDropListDropped)="onDrop($event, 'WAITING_PAYMENT')"
+                class="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar">
+
+                @for (order of readyOrders(); track order.id) {
+                <div cdkDrag
+                    class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 border-l-green-500 border-y border-r border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all group relative">
+                    <!-- Status Change Menu -->
+                    <div class="absolute top-2 right-2">
+                        <p-button 
+                            icon="pi pi-ellipsis-v" 
+                            [rounded]="true" 
+                            [text]="true"
+                            severity="secondary"
+                            size="small"
+                            styleClass="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                            #statusMenuBtn3
+                            (onClick)="statusMenu3.toggle($event)"
+                            (click)="$event.stopPropagation()"></p-button>
+                        <p-menu 
+                            #statusMenu3 
+                            [model]="getStatusMenuItems(order)"
+                            [popup]="true"
+                            [appendTo]="'body'">
+                        </p-menu>
+                    </div>
+
+                    <!-- Header: Order ID, Vehicle Type -->
+                    <div class="flex items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-base text-gray-900 dark:text-gray-100">#{{ order.id }}</span>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{
+                                order.vehicle?.category }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer (static - order finished, show final time) -->
+                    <div class="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-semibold mb-3">
+                        <i class="pi pi-clock text-[10px]"></i>
+                        <span>{{ getElapsedTime(order) | elapsedTime }}</span>
+                        <!-- Force update when status changes (but not continuously) -->
+                        <span style="display: none;">{{ order.status }}{{ order.completedAt }}</span>
+                    </div>
+
+                    <!-- Client and Washer Row -->
+                    <div class="flex justify-between items-center mb-3">
+                        <!-- Client -->
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-semibold">
+                                {{ (order.vehicle?.client?.name || 'C')[0].toUpperCase() }}
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Cliente</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ order.vehicle?.client?.name ||
+                                    'Cliente General' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Washer -->
+                        <div class="flex items-center gap-2">
+                            <i class="pi pi-user text-green-500 dark:text-green-400 text-sm"></i>
+                            <div class="flex flex-col items-end">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Lavador</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ getWasherName(order) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Photos, Details and Payment Buttons -->
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+                        @if (order.images && order.images.length > 0) {
+                        <div class="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                            <i class="pi pi-camera text-gray-400 dark:text-gray-500"></i>
+                            <span>{{ order.images.length }} Foto{{ order.images.length > 1 ? 's' : '' }}</span>
+                        </div>
+                        } @else {
+                        <div></div>
+                        }
+                        <div class="flex gap-2">
+                            <p-button label="Detalles" icon="pi pi-eye" 
+                                (onClick)="showOrderDetail(order)" [text]="true" size="small"></p-button>
+                            @if (!isOrderFullyPaid(order)) {
+                                <p-button label="Pagar" icon="pi pi-money-bill" 
+                                    (onClick)="openPaymentModal(order)" 
+                                    styleClass="bg-green-600 border-green-600 hover:bg-green-700" 
+                                    size="small"></p-button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                }
+
+                @if (readyOrders().length === 0) {
+                <div
+                    class="flex flex-col items-center justify-center h-32 text-gray-400 dark:text-gray-600 border-2 border-dashed border-green-100 dark:border-green-800 rounded-lg m-2 bg-green-50/20 dark:bg-green-900/10">
+                    <i class="pi pi-check-circle text-2xl mb-2 opacity-50"></i>
+                    <span class="text-sm">Sin vehículos listos</span>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <app-process-payment-modal 
+        [order]="selectedOrderForPayment()" 
+        [visible]="displayPaymentModal()"
+        (onClose)="closePaymentModal()"
+        (onPaymentSuccess)="onPaymentSuccess($event)">
+    </app-process-payment-modal>
+
+    <!-- Cancel Order Modal -->
+    <app-cancel-order-modal
+        [visible]="displayCancelModal()"
+        [order]="selectedOrderForCancel()"
+        (onCancel)="confirmCancelOrder($event)"
+        (onClose)="displayCancelModal.set(false)">
+    </app-cancel-order-modal>
+</div>

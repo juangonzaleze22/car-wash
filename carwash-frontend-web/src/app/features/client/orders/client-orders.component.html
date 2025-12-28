@@ -1,0 +1,205 @@
+<p-toast></p-toast>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Mis Órdenes</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Historial de tus servicios de lavado</p>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <!-- Loading Skeletons -->
+        <div class="space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 h-32">
+                <p-skeleton width="40%" height="1.5rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="80%" height="3rem"></p-skeleton>
+            </div>
+        </div>
+    } @else {
+        <!-- Filtros -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-4 p-4">
+            <div class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Filtrar por vehículo</label>
+                    <p-dropdown 
+                        [options]="vehicleFilterOptions()" 
+                        [(ngModel)]="selectedVehicleFilter"
+                        optionLabel="label"
+                        optionValue="value"
+                        [showClear]="true"
+                        placeholder="Todos los vehículos"
+                        styleClass="w-full">
+                    </p-dropdown>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="pi pi-list text-blue-500"></i>
+                    Historial de Lavados
+                </h3>
+            </div>
+            <div class="p-4">
+                @if (filteredHistory().length === 0) {
+                    <div class="text-center py-12">
+                        <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No hay historial de lavados</p>
+                    </div>
+                } @else {
+                    <div class="overflow-x-auto">
+                        <p-table 
+                            [value]="filteredHistory()" 
+                            styleClass="p-datatable-striped p-datatable-sm"
+                            [tableStyle]="{'min-width': '50rem'}">
+                            <ng-template pTemplate="header">
+                                <tr class="bg-gray-100 dark:bg-gray-700">
+                                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Placa</th>
+                                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Fecha</th>
+                                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Servicios</th>
+                                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Total</th>
+                                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-order>
+                                <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                                    <td class="py-3 px-4">
+                                        <div class="flex items-center gap-2">
+                                            <i class="pi pi-car text-blue-500 dark:text-blue-400"></i>
+                                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ order.plate }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-medium text-gray-900 dark:text-gray-100">{{ order.completedAt | date:'dd/MM/yyyy' }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ order.completedAt | date:'HH:mm' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex flex-col gap-1">
+                                            @for (service of order.services; track service.name) {
+                                                <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded inline-block w-fit">{{ service.name }}</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="font-bold text-base text-green-600 dark:text-green-400">{{ formatUSD(order.totalAmount) }}</span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex gap-1 justify-center items-center">
+                                            <p-button 
+                                                icon="pi pi-eye" 
+                                                [rounded]="true" 
+                                                [text]="true"
+                                                severity="info"
+                                                size="small"
+                                                pTooltip="Ver detalles"
+                                                (onClick)="viewOrderDetails(order.id)">
+                                            </p-button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="emptymessage">
+                                <tr>
+                                    <td colspan="5" class="text-center py-12">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+                                            <span class="text-gray-500 dark:text-gray-400 font-medium">No se encontraron órdenes</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Order Details Dialog -->
+    <p-dialog 
+        header="Detalles de la Orden" 
+        [visible]="showOrderDialog()" 
+        (visibleChange)="showOrderDialog.set($event)"
+        [modal]="true"
+        [style]="{width: '600px'}"
+        styleClass="rounded-xl">
+        
+        @if (loadingOrder()) {
+            <div class="flex justify-center py-8">
+                <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+            </div>
+        } @else if (selectedOrder()) {
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Placa</p>
+                        <p class="font-bold text-gray-800 dark:text-white">{{ selectedOrder()!.plate }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Estado</p>
+                        <p-tag 
+                            [value]="getStatusLabel(selectedOrder()!.status)" 
+                            [severity]="getStatusSeverity(selectedOrder()!.status)"
+                            styleClass="text-[10px] uppercase font-bold">
+                        </p-tag>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Servicios</p>
+                    <div class="space-y-2">
+                        @for (service of selectedOrder()!.services; track service.id) {
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="font-semibold text-sm text-gray-800 dark:text-white">{{ service.name }}</p>
+                                        @if (service.assignedWasher) {
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Lavador: {{ service.assignedWasher.name }}</p>
+                                        }
+                                    </div>
+                                    <p class="font-bold text-gray-800 dark:text-white">{{ formatUSD(service.price) }}</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-gray-800 dark:text-white">Total</span>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatUSD(selectedOrder()!.totalAmount) }}</span>
+                            @if (exchangeRate() > 0) {
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ formatVES(selectedOrder()!.totalAmount) }}</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                @if (selectedOrder()!.payments.length > 0) {
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pagos</p>
+                        <div class="space-y-2">
+                            @for (payment of selectedOrder()!.payments; track payment.createdAt) {
+                                <div class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ payment.method }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ payment.createdAt | date:'short' }}</p>
+                                    </div>
+                                    <p class="font-bold text-gray-800 dark:text-white">{{ payment.currency }} {{ formatUSD(payment.amount) }}</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </p-dialog>
+</div>
+

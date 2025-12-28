@@ -1,0 +1,23 @@
+/* Estilos para impresión */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+    }
+
+    .bg-gray-50 {
+        background: white !important;
+    }
+
+    .shadow-sm {
+        box-shadow: none !important;
+    }
+
+    .border {
+        border: 1px solid #e5e7eb !important;
+    }
+}
+

@@ -1,0 +1,26 @@
+<div class="flex justify-center items-center min-h-screen bg-blue-50 dark:bg-gray-900">
+    <p-toast></p-toast>
+    <p-card header="CarWash Pro" subheader="Iniciar Sesión" [style]="{ width: '360px' }" styleClass="shadow-lg">
+        <ng-template pTemplate="header">
+            <div class="h-16 bg-blue-600 flex items-center justify-center rounded-t-xl">
+                <i class="pi pi-car text-4xl text-white"></i>
+            </div>
+        </ng-template>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-3">
+            <div class="flex flex-col gap-2">
+                <label htmlFor="username" class="font-bold">Usuario</label>
+                <input pInputText id="username" formControlName="username" placeholder="Ingrese su usuario"
+                    class="w-full" />
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label htmlFor="password" class="font-bold">Contraseña</label>
+                <p-password id="password" formControlName="password" [feedback]="false" [toggleMask]="true"
+                    styleClass="w-full" inputStyleClass="w-full" placeholder="Ingrese su contraseña"></p-password>
+            </div>
+
+            <p-button label="Ingresar" type="submit" [loading]="loading" styleClass="w-full"></p-button>
+        </form>
+    </p-card>
+</div>

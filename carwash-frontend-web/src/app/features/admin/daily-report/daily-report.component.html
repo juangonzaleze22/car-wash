@@ -1,0 +1,334 @@
+<p-toast></p-toast>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Cierre de Caja</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Reporte financiero detallado y control de efectivo</p>
+        </div>
+        <p-button 
+            label="Imprimir Reporte" 
+            icon="pi pi-print"
+            (onClick)="printReport()"
+            [outlined]="true"
+            severity="secondary"
+            styleClass="no-print">
+        </p-button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 p-4 no-print">
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Período:</label>
+                <div class="flex flex-wrap gap-2">
+                    @for (option of periodOptions; track option.value) {
+                        <p-button 
+                            [label]="option.label"
+                            [outlined]="selectedPeriod() !== option.value"
+                            [severity]="selectedPeriod() === option.value ? 'primary' : 'secondary'"
+                            size="small"
+                            (onClick)="onPeriodChange(option.value)">
+                        </p-button>
+                    }
+                </div>
+            </div>
+
+            @if (selectedPeriod() === 'custom') {
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Desde</label>
+                        <p-calendar 
+                            [ngModel]="customStartDate()" 
+                            (ngModelChange)="customStartDate.set($event); onCustomDateChange()"
+                            [showIcon]="true"
+                            dateFormat="dd/mm/yy"
+                            [maxDate]="getMaxStartDate()"
+                            styleClass="w-full p-inputtext-sm">
+                        </p-calendar>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-1">Hasta</label>
+                        <p-calendar 
+                            [ngModel]="customEndDate()" 
+                            (ngModelChange)="customEndDate.set($event); onCustomDateChange()"
+                            [showIcon]="true"
+                            dateFormat="dd/mm/yy"
+                            [minDate]="customStartDate()"
+                            [maxDate]="maxDate"
+                            styleClass="w-full p-inputtext-sm">
+                        </p-calendar>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="flex flex-col items-center justify-center py-12">
+            <i class="pi pi-spin pi-spinner text-4xl text-blue-500 dark:text-blue-400 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">Generando reporte...</p>
+        </div>
+    } @else if (report()) {
+        <!-- Report Header Info -->
+        <div class="bg-white dark:bg-gray-800 border-l-4 border-blue-500 rounded-r-lg shadow-sm p-4 mb-6 flex justify-between items-center dark:border-gray-700">
+            <div>
+                <p class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Período del Reporte</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                    {{ report()!.startDate | date:'dd MMM yyyy' }} 
+                    @if (report()!.startDate !== report()!.endDate) {
+                        - {{ report()!.endDate | date:'dd MMM yyyy' }}
+                    }
+                </h2>
+            </div>
+            <div class="text-right">
+                <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold uppercase border border-blue-100 dark:border-blue-800">
+                    {{ getPeriodLabel(report()!.period) }}
+                </span>
+            </div>
+        </div>
+
+        @if (isAdmin()) {
+            <!-- Executive Summary Cards (SOLO ADMIN) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Ingresos Totales -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i class="pi pi-dollar text-6xl text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Ingresos Totales</p>
+                    <h3 class="text-2xl font-bold text-green-600 dark:text-green-400">${{ report()!.paymentsByCurrency.totalUSD | number:'1.2-2' }}</h3>
+                    <div class="mt-2 flex gap-2 text-xs">
+                        <span class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800">USD: ${{ report()!.paymentsByCurrency.USD | number:'1.0-0' }}</span>
+                        <span class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800">Bs: {{ report()!.paymentsByCurrency.VES | number:'1.0-0' }}</span>
+                    </div>
+                </div>
+
+                <!-- Gastos -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i class="pi pi-money-bill text-6xl text-red-600 dark:text-red-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Gastos Operativos</p>
+                    <h3 class="text-2xl font-bold text-red-600 dark:text-red-400">${{ report()!.summary.totalExpensesUSD | number:'1.2-2' }}</h3>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Registrados en módulo de gastos</p>
+                </div>
+
+                <!-- Ganancias Lavadores -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i class="pi pi-users text-6xl text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Pago a Lavadores</p>
+                    <h3 class="text-2xl font-bold text-purple-600 dark:text-purple-400">${{ report()!.summary.totalWasherEarningsUSD | number:'1.2-2' }}</h3>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Comisiones por servicios</p>
+                </div>
+
+                <!-- Ganancia Neta -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i class="pi pi-chart-line text-6xl" [ngClass]="report()!.summary.netProfitUSD! >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Ganancia Neta</p>
+                    <h3 class="text-2xl font-bold" [ngClass]="report()!.summary.netProfitUSD! >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'">
+                        ${{ report()!.summary.netProfitUSD | number:'1.2-2' }}
+                    </h3>
+                    @if (report()!.paymentsByCurrency.totalUSD > 0) {
+                        <p class="text-xs font-bold mt-1" [ngClass]="report()!.summary.netProfitUSD! >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'">
+                            {{ ((report()!.summary.netProfitUSD! / report()!.paymentsByCurrency.totalUSD) * 100) | number:'1.1-1' }}% margen
+                        </p>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Control de Caja (Money to Deliver) - VISIBLE PARA TODOS -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-800 shadow-sm overflow-hidden mb-6">
+            <div class="bg-orange-50 dark:bg-orange-900/20 p-4 border-b border-orange-100 dark:border-orange-800 flex justify-between items-center">
+                <h3 class="text-sm font-bold text-orange-800 dark:text-orange-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="pi pi-wallet"></i>
+                    DINERO A ENTREGAR (ARQUEO)
+                </h3>
+                <div class="text-right">
+                    <span class="text-2xl font-bold text-orange-600 dark:text-orange-400">${{ report()!.summary.moneyToDeliverUSD | number:'1.2-2' }}</span>
+                    <span class="text-xs text-orange-700 dark:text-orange-300 block font-medium">Total Neto</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100 dark:divide-gray-700">
+                <!-- Efectivo -->
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">EFECTIVO</h4>
+                        <span class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-[10px] font-bold px-2 py-0.5 rounded">FÍSICO</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">USD Cash</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">${{ report()!.summary.moneyToDeliverByMethod.CASH.USD | number:'1.2-2' }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">VES Cash</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ report()!.summary.moneyToDeliverByMethod.CASH.VES | number:'1.2-2' }} Bs</span>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <span class="text-xs font-bold text-green-600 dark:text-green-400">TOTAL USD</span>
+                            <span class="text-lg font-bold text-green-700 dark:text-green-300">${{ report()!.summary.moneyToDeliverByMethod.CASH.totalUSD | number:'1.2-2' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transferencia -->
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">TRANSFERENCIA</h4>
+                        <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded">BANCO</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">USD</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">${{ report()!.summary.moneyToDeliverByMethod.TRANSFER.USD | number:'1.2-2' }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">VES</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ report()!.summary.moneyToDeliverByMethod.TRANSFER.VES | number:'1.2-2' }} Bs</span>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <span class="text-xs font-bold text-blue-600 dark:text-blue-400">TOTAL USD</span>
+                            <span class="text-lg font-bold text-blue-700 dark:text-blue-300">${{ report()!.summary.moneyToDeliverByMethod.TRANSFER.totalUSD | number:'1.2-2' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta -->
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-gray-700 dark:text-gray-300 text-sm">TARJETA</h4>
+                        <span class="bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded">POS</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">USD</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">${{ report()!.summary.moneyToDeliverByMethod.CARD.USD | number:'1.2-2' }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500 dark:text-gray-400">VES</span>
+                            <span class="font-mono font-bold text-gray-800 dark:text-gray-200">{{ report()!.summary.moneyToDeliverByMethod.CARD.VES | number:'1.2-2' }} Bs</span>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <span class="text-xs font-bold text-purple-600 dark:text-purple-400">TOTAL USD</span>
+                            <span class="text-lg font-bold text-purple-700 dark:text-purple-300">${{ report()!.summary.moneyToDeliverByMethod.CARD.totalUSD | number:'1.2-2' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalle de Órdenes - VISIBLE PARA TODOS -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-6">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+                <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="pi pi-list"></i>
+                    Detalle de Transacciones
+                </h3>
+                <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                    {{ report()!.orders.length }} órdenes
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <p-table 
+                    [value]="report()!.orders" 
+                    [paginator]="true"
+                    [rows]="10"
+                    styleClass="p-datatable-striped p-datatable-sm"
+                    [tableStyle]="{'min-width': '70rem'}">
+                    <ng-template pTemplate="header">
+                        <tr class="bg-gray-50 dark:bg-gray-700">
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Orden</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Cliente / Vehículo</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Servicios</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-right">Total</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Métodos de Pago</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Estado</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-order>
+                        <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-3 px-4">
+                                <span class="font-mono text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">#{{ order.id }}</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ order.plate }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ order.clientName }}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex flex-col gap-1">
+                                    @for (service of order.services; track service.name) {
+                                        <span class="text-xs bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-600">{{ service.name }}</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="font-bold text-sm text-gray-900 dark:text-gray-100">${{ order.totalAmount | number:'1.2-2' }}</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex flex-col gap-1">
+                                    @for (payment of order.payments; track payment.amount) {
+                                        <div class="text-xs flex items-center gap-1">
+                                            <i class="pi pi-circle-fill text-[6px] text-gray-400 dark:text-gray-500"></i>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ payment.amount | number:'1.2-2' }} {{ payment.currency }}</span>
+                                            <span class="text-gray-500 dark:text-gray-400 text-[10px] uppercase">({{ getMethodLabel(payment.method) }})</span>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)" styleClass="text-[10px] font-bold uppercase"></p-tag>
+                            </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        </div>
+
+        <!-- Tabla de Gastos (SOLO ADMIN) -->
+        @if (isAdmin() && report()!.expenses && report()!.expenses!.length > 0) {
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="pi pi-money-bill text-red-500"></i>
+                        Gastos Registrados
+                    </h3>
+                </div>
+                <p-table [value]="report()!.expenses!" styleClass="p-datatable-striped p-datatable-sm" [paginator]="false">
+                    <ng-template pTemplate="header">
+                        <tr class="bg-gray-50 dark:bg-gray-700">
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Descripción</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Categoría</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-right">Monto</th>
+                            <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Fecha</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-expense>
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-3 px-4 font-medium text-sm text-gray-800 dark:text-gray-200">{{ expense.description }}</td>
+                            <td class="py-3 px-4"><p-tag [value]="getExpenseCategoryLabel(expense.category)" severity="warning" styleClass="text-[10px] uppercase font-bold"></p-tag></td>
+                            <td class="py-3 px-4 text-right font-bold text-red-600 dark:text-red-400 text-sm">${{ expense.amountUSD | number:'1.2-2' }}</td>
+                            <td class="py-3 px-4 text-xs text-gray-500 dark:text-gray-400">{{ expense.createdAt | date:'d MMM, h:mm a' }}</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+        }
+
+    } @else {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+            <div class="flex flex-col items-center gap-3">
+                <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+                <p class="text-gray-500 dark:text-gray-400">No hay datos disponibles para la fecha seleccionada</p>
+            </div>
+        </div>
+    }
+</div>

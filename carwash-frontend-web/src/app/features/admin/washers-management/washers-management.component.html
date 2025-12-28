@@ -1,0 +1,202 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Lavadores</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Administra el personal encargado del lavado</p>
+        </div>
+        <p-button 
+            label="Nuevo Lavador" 
+            icon="pi pi-plus"
+            (onClick)="openNew()"
+            styleClass="font-semibold shadow-md">
+        </p-button>
+    </div>
+
+    <!-- Washers Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-users"></i>
+                EQUIPO DE LAVADO
+            </h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                {{ washers().length }} lavadores
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table 
+                [value]="washers()" 
+                [loading]="loading()"
+                [paginator]="false"
+                styleClass="p-datatable-striped p-datatable-sm"
+                [tableStyle]="{'min-width': '50rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Nombre</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Usuario</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Estado</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-washer>
+                    <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">
+                                {{ washer.name || '-' }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">{{ washer.username }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag 
+                                [value]="washer.active ? 'ACTIVO' : 'INACTIVO'" 
+                                [severity]="washer.active ? 'success' : 'danger'"
+                                styleClass="text-[10px] font-bold">
+                            </p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                <p-button 
+                                    icon="pi pi-pencil" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="info"
+                                    size="small"
+                                    pTooltip="Editar"
+                                    tooltipPosition="left"
+                                    (onClick)="editWasher(washer)"></p-button>
+                                <p-button 
+                                    [icon]="washer.active ? 'pi pi-eye-slash' : 'pi pi-eye'" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    [severity]="washer.active ? 'warning' : 'success'"
+                                    size="small"
+                                    [pTooltip]="washer.active ? 'Desactivar' : 'Activar'"
+                                    tooltipPosition="left"
+                                    (onClick)="toggleActive(washer)"></p-button>
+                                <p-button 
+                                    icon="pi pi-trash" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="danger"
+                                    size="small"
+                                    pTooltip="Eliminar"
+                                    tooltipPosition="left"
+                                    (onClick)="deleteWasher(washer)"></p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-users text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No hay lavadores registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Dialog -->
+<p-dialog 
+    [header]="isEditMode() ? 'Editar Lavador' : 'Nuevo Lavador'"
+    [visible]="displayDialog()"
+    (visibleChange)="displayDialog.set($event)"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+    [closable]="true"
+    [draggable]="false"
+    styleClass="rounded-xl">
+    
+    <div class="flex flex-col gap-4 pt-2">
+        <!-- Name -->
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Nombre Completo
+            </label>
+            <input 
+                type="text" 
+                pInputText 
+                [(ngModel)]="formData().name"
+                placeholder="Ej: Juan Pérez"
+                class="w-full" />
+        </div>
+
+        <!-- Username -->
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Nombre de Usuario <span class="text-red-500">*</span>
+            </label>
+            <input 
+                type="text" 
+                pInputText 
+                [(ngModel)]="formData().username"
+                placeholder="Ej: jperez"
+                class="w-full font-mono" />
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Contraseña 
+                @if (!isEditMode()) {
+                    <span class="text-red-500">*</span>
+                }
+            </label>
+            <p-password 
+                [(ngModel)]="formData().password"
+                [placeholder]="isEditMode() ? 'Nueva contraseña (opcional)' : 'Ingrese contraseña'"
+                [toggleMask]="true"
+                [feedback]="false"
+                styleClass="w-full"
+                inputStyleClass="w-full">
+            </p-password>
+            @if (isEditMode()) {
+                <small class="text-gray-500 dark:text-gray-400 text-xs mt-1 block">Dejar vacío para mantener la actual</small>
+            }
+        </div>
+
+        <!-- Active Status -->
+        @if (isEditMode()) {
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <p-checkbox 
+                    [binary]="true" 
+                    inputId="active"
+                    [(ngModel)]="formData().active">
+                </p-checkbox>
+                <label for="active" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    Lavador activo y habilitado
+                </label>
+            </div>
+        }
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-4">
+            <p-button 
+                label="Cancelar" 
+                icon="pi pi-times" 
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="displayDialog.set(false)">
+            </p-button>
+            <p-button 
+                [label]="isEditMode() ? 'Actualizar' : 'Crear Lavador'" 
+                icon="pi pi-check" 
+                (onClick)="saveWasher()"
+                styleClass="font-semibold">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

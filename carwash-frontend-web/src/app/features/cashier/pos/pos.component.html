@@ -1,0 +1,291 @@
+<!-- POS Component Template -->
+<div class="p-4 min-h-screen bg-gray-50">
+    <p-toast></p-toast>
+
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-1">Punto de Venta</h1>
+        <p class="text-sm text-gray-500">Procesamiento de pagos y gestión de órdenes pendientes</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Orders List Section -->
+        <div class="lg:col-span-2 flex flex-col gap-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-semibold text-gray-700">Órdenes por Cobrar</h2>
+                <p-tag [value]="waitingOrders().length.toString() + ' Pendientes'" severity="warning"></p-tag>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="relative">
+                <i class="pi pi-search absolute left-3 top-3 text-gray-400"></i>
+                <input type="text" pInputText placeholder="Filtrar por placa o cliente..."
+                    (input)="searchOrders({query: $any($event.target).value})"
+                    class="w-full pl-10 p-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" />
+            </div>
+
+            <!-- Orders Grid -->
+            <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto max-h-[calc(100vh-200px)] pr-1 custom-scrollbar">
+                @for (order of (orderSuggestions().length > 0 ? orderSuggestions() : waitingOrders()); track order.id) {
+                <div (click)="onOrderSelect(order)"
+                    class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-blue-300 group relative"
+                    [ngClass]="{'border-blue-500 ring-2 ring-blue-200': selectedOrder()?.id === order.id,
+                          'border-gray-200 hover:border-blue-300': selectedOrder()?.id !== order.id}">
+
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="font-bold text-xl text-gray-800 block">{{ order.vehicle?.plate }}</span>
+                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                {{ order.vehicle?.category }}
+                            </span>
+                        </div>
+                        <span class="font-bold text-lg text-green-600">\${{ order.totalAmount }}</span>
+                        <span class="text-sm text-gray-600" *ngIf="order.duration">Duración: {{ order.duration }}
+                            min</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-2 text-sm text-gray-600">
+                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                            <i class="pi pi-user"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-medium text-gray-900 text-xs">{{ order.vehicle?.client?.name || 'Cliente
+                                General' }}</span>
+                            <span class="text-[10px] text-gray-400">Orden #{{ order.id }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                        <span class="text-xs text-gray-400">{{ order.updatedAt | date:'shortTime' }}</span>
+                        <div class="flex gap-2">
+                            <button pButton icon="pi pi-eye"
+                                class="p-button-rounded p-button-text p-button-sm p-button-secondary"
+                                (click)="$event.stopPropagation(); showOrderDetail(order)"
+                                pTooltip="Ver Detalles"></button>
+                            <span
+                                class="text-xs font-medium text-blue-600 group-hover:underline cursor-pointer">Seleccionar
+                                para cobrar</span>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+
+            @if (waitingOrders().length === 0) {
+            <div
+                class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                <i class="pi pi-check-circle text-4xl mb-3 opacity-50"></i>
+                <p class="font-medium">No hay órdenes pendientes de cobro</p>
+            </div>
+            }
+        </div>
+
+        <!-- Payment Section -->
+        <div class="lg:col-span-1">
+            <div class="sticky top-4">
+                @if (selectedOrder()) {
+                <p-card header="Procesar Pago" styleClass="shadow-md border-t-4 border-t-blue-500">
+                    <div class="flex flex-col gap-4">
+                        <!-- Order Details -->
+                        <div class="text-center pb-4 border-b border-gray-100">
+                            <div class="text-3xl font-bold text-gray-800 mb-1">{{ selectedOrder()?.vehicle?.plate }}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ selectedOrder()?.vehicle?.category }}</div>
+                        </div>
+
+                        <!-- Services -->
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h4 class="font-semibold text-xs text-gray-500 uppercase mb-2 tracking-wider">Servicios</h4>
+                            @for (item of selectedOrder()?.items; track item.id) {
+                            <div class="flex justify-between text-sm mb-2 last:mb-0">
+                                <span class="text-gray-700">{{ item.service?.name }}</span>
+                                <span class="font-medium">\${{ item.service?.price }}</span>
+                            </div>
+                            }
+                        </div>
+
+                        <p-divider></p-divider>
+
+                        <!-- Exchange Rate -->
+                        <div
+                            class="flex items-center justify-between bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
+                            <span class="text-sm font-medium text-blue-700">Tasa (VES/USD)</span>
+                            <div class="flex items-center gap-2">
+                                <i class="pi pi-sync text-blue-500"></i>
+                                <input pInputText type="number" [(ngModel)]="exchangeRate"
+                                    (ngModelChange)="calculateTotals()"
+                                    class="w-24 text-right p-1 text-sm font-bold text-blue-800 bg-white border-blue-200 rounded" />
+                            </div>
+                        </div>
+
+                        <!-- Payment Entry Form -->
+                        <form [formGroup]="paymentForm" (ngSubmit)="addPayment()"
+                            class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-2">
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-gray-600">Monto</label>
+                                    <div class="p-inputgroup">
+                                        <span class="p-inputgroup-addon text-xs font-bold px-2">{{
+                                            paymentForm.get('currency')?.value }}</span>
+                                        <input pInputText type="number" formControlName="amount" placeholder="0.00"
+                                            class="text-right w-full" />
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-xs font-bold text-gray-600">Moneda</label>
+                                    <div class="flex bg-white rounded-md border border-gray-300 overflow-hidden">
+                                        @for (curr of currencies; track curr.value) {
+                                        <div class="flex-1 text-center py-2 text-xs font-bold cursor-pointer transition-colors"
+                                            [ngClass]="{'bg-blue-600 text-white': paymentForm.get('currency')?.value === curr.value, 'hover:bg-gray-100': paymentForm.get('currency')?.value !== curr.value}"
+                                            (click)="paymentForm.patchValue({currency: curr.value})">
+                                            {{ curr.label }}
+                                        </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-1 mb-3">
+                                <label class="text-xs font-bold text-gray-600">Método</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    @for (method of paymentMethods; track method.value) {
+                                    <div class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer transition-all hover:bg-white"
+                                        [ngClass]="{'border-blue-500 bg-blue-50 text-blue-700': paymentForm.get('paymentMethod')?.value === method.value, 'border-gray-200 text-gray-500': paymentForm.get('paymentMethod')?.value !== method.value}"
+                                        (click)="paymentForm.patchValue({paymentMethod: method.value})">
+                                        <i class="pi text-lg mb-1"
+                                            [ngClass]="{'pi-money-bill': method.value === 'CASH', 'pi-credit-card': method.value === 'CARD', 'pi-arrow-right-arrow-left': method.value === 'TRANSFER'}"></i>
+                                        <span class="text-[10px] font-bold">{{ method.label }}</span>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (paymentForm.get('paymentMethod')?.value === 'TRANSFER') {
+                            <div class="flex flex-col gap-1 mb-3">
+                                <label class="text-xs font-bold text-gray-600">Referencia</label>
+                                <input pInputText type="text" formControlName="reference" placeholder="Nro. Referencia"
+                                    class="w-full p-2 text-sm border rounded" />
+                            </div>
+                            }
+
+                            <button pButton label="Agregar Pago" icon="pi pi-plus" type="submit"
+                                [disabled]="paymentForm.invalid || !paymentForm.get('amount')?.value"
+                                class="w-full p-button-sm p-button-outlined"></button>
+                        </form>
+
+                        <!-- Payment List -->
+                        @if (currentPayments().length > 0) {
+                        <div class="mb-4">
+                            <h4 class="font-semibold text-xs text-gray-500 uppercase mb-2 tracking-wider">Pagos
+                                Agregados</h4>
+                            <div class="border rounded-lg overflow-hidden">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-gray-500 font-medium text-xs uppercase">
+                                        <tr>
+                                            <th class="px-3 py-2">Monto</th>
+                                            <th class="px-3 py-2">Método</th>
+                                            <th class="px-3 py-2 text-right">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        @for (payment of currentPayments(); track $index) {
+                                        <tr class="bg-white">
+                                            <td class="px-3 py-2 font-medium">
+                                                {{ payment.amount | number:'1.2-2' }} {{ payment.currency }}
+                                                @if (payment.currency === 'VES') {
+                                                <span class="text-xs text-gray-400 block">(${{ (payment.amount /
+                                                    payment.exchangeRate) | number:'1.2-2' }})</span>
+                                                }
+                                            </td>
+                                            <td class="px-3 py-2 text-gray-600">
+                                                <div class="flex items-center gap-1">
+                                                    <i class="pi text-xs"
+                                                        [ngClass]="{'pi-money-bill': payment.method === 'CASH', 'pi-credit-card': payment.method === 'CARD', 'pi-arrow-right-arrow-left': payment.method === 'TRANSFER'}"></i>
+                                                    <span>{{ payment.method }}</span>
+                                                </div>
+                                                @if (payment.reference) {
+                                                <span class="text-[10px] text-gray-400 block">Ref: {{ payment.reference
+                                                    }}</span>
+                                                }
+                                            </td>
+                                            <td class="px-3 py-2 text-right">
+                                                <button pButton icon="pi pi-trash"
+                                                    class="p-button-rounded p-button-danger p-button-text p-button-xs"
+                                                    (click)="removePayment($index)"></button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        }
+
+                        <p-divider></p-divider>
+
+                        <!-- Totals Summary -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Total Orden</span>
+                                <span class="font-bold text-lg">\${{ selectedOrder()?.totalAmount }}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-blue-600">
+                                <span>Total Pagado</span>
+                                <span class="font-bold text-lg">\${{ totalPaidUSD() | number:'1.2-2' }}</span>
+                            </div>
+
+                            @if (remainingUSD() > 0) {
+                            <div class="flex justify-between items-center text-red-500 bg-red-50 p-2 rounded">
+                                <span class="font-medium">Restante</span>
+                                <div class="text-right">
+                                    <span class="font-bold block">\${{ remainingUSD() | number:'1.2-2' }}</span>
+                                    <span class="text-xs block">Bs. {{ (remainingUSD() * exchangeRate()) |
+                                        number:'1.2-2' }}</span>
+                                </div>
+                            </div>
+                            } @else {
+                            <div class="flex justify-between items-center text-green-600 bg-green-50 p-2 rounded">
+                                <span class="font-medium">Cambio / Vuelto</span>
+                                <div class="text-right">
+                                    <span class="font-bold block">\${{ changeUSD() | number:'1.2-2' }}</span>
+                                    <span class="text-xs block">Bs. {{ changeVES() | number:'1.2-2' }}</span>
+                                </div>
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <p-button label="Cancelar" icon="pi pi-times"
+                                styleClass="p-button-secondary p-button-outlined w-full"
+                                (onClick)="cancelSelection()"></p-button>
+                            <p-button label="Pagar" icon="pi pi-check"
+                                styleClass="w-full bg-green-600 border-green-600 hover:bg-green-700"
+                                [disabled]="remainingUSD() > 0.01" [loading]="processingPayment()"
+                                (onClick)="processPayment()"></p-button>
+                        </div>
+                    </div>
+                </p-card>
+                } @else {
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center h-full flex flex-col items-center justify-center min-h-[400px]">
+                    <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-500">
+                        <i class="pi pi-wallet text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Listo para Cobrar</h3>
+                    <p class="text-gray-500 max-w-xs mx-auto">Selecciona una orden de la lista para ver los detalles y
+                        procesar el pago.</p>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Detail Modal -->
+<app-order-detail-modal
+    [order]="selectedOrderDetail()"
+    [visible]="displayDetailDialog()"
+    (onClose)="displayDetailDialog.set(false)">
+</app-order-detail-modal>

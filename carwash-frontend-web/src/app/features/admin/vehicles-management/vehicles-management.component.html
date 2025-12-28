@@ -1,0 +1,293 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Vehículos</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Administra la flota de vehículos y sus propietarios</p>
+        </div>
+        <p-button 
+            label="Nuevo Vehículo" 
+            icon="pi pi-plus"
+            (onClick)="openNew()"
+            styleClass="font-semibold shadow-md">
+        </p-button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Buscar por Placa</label>
+                <input
+                    type="text"
+                    pInputText
+                    [(ngModel)]="plateFilter"
+                    (input)="onPlateFilterChange()"
+                    placeholder="Ej: ABC-123"
+                    class="w-full uppercase" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoría</label>
+                <p-dropdown
+                    [options]="categoryFilterOptions()"
+                    [ngModel]="selectedCategory()"
+                    (onChange)="selectedCategory.set($event.value); onCategoryFilterChange()"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    placeholder="Todas las categorías">
+                </p-dropdown>
+            </div>
+            <div class="flex items-end">
+                <p-button
+                    label="Limpiar Filtros"
+                    icon="pi pi-filter-slash"
+                    severity="secondary"
+                    [outlined]="true"
+                    (onClick)="clearFilters()"
+                    styleClass="w-full">
+                </p-button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-car"></i>
+                FLOTA DE VEHÍCULOS
+            </h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                {{ totalRecords() }} registrados
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table
+                [value]="vehicles()"
+                [loading]="loading()"
+                [paginator]="true"
+                [rows]="limit()"
+                [totalRecords]="totalRecords()"
+                [lazy]="true"
+                (onLazyLoad)="onPageChange($event)"
+                [rowsPerPageOptions]="[10, 20, 50]"
+                [showCurrentPageReport]="true"
+                currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords}"
+                styleClass="p-datatable-striped p-datatable-sm"
+                [tableStyle]="{'min-width': '60rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Placa</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Categoría</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Cliente</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Teléfono</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Notas</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Historial</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-vehicle>
+                    <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <span class="font-mono font-bold text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                                {{ vehicle.plate }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag [value]="getCategoryLabel(vehicle.category)" severity="info" styleClass="text-xs font-bold"></p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ vehicle.client?.name || 'Sin asignar' }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ vehicle.client?.phone || '-' }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @if (vehicle.notes) {
+                                <span class="text-gray-500 dark:text-gray-400 text-xs" [pTooltip]="vehicle.notes" tooltipPosition="top">
+                                    <i class="pi pi-comment mr-1"></i>
+                                    {{ vehicle.notes.length > 25 ? vehicle.notes.substring(0, 25) + '...' : vehicle.notes }}
+                                </span>
+                            } @else {
+                                <span class="text-gray-300 dark:text-gray-600 text-xs">-</span>
+                            }
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="font-bold text-sm text-blue-600 dark:text-blue-400">{{ vehicle.orders?.length || 0 }}</span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Órdenes</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                <p-button
+                                    icon="pi pi-pencil"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    severity="info"
+                                    size="small"
+                                    pTooltip="Editar"
+                                    (onClick)="editVehicle(vehicle)">
+                                </p-button>
+                                <p-button
+                                    icon="pi pi-trash"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    severity="danger"
+                                    size="small"
+                                    pTooltip="Eliminar"
+                                    [disabled]="hasActiveOrders(vehicle)"
+                                    (onClick)="deleteVehicle(vehicle)">
+                                </p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="7" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-car text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No se encontraron vehículos registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Dialog -->
+<p-dialog
+    [(visible)]="displayDialog"
+    [header]="isEditMode() ? 'Editar Vehículo' : 'Nuevo Vehículo'"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+    [closable]="true"
+    styleClass="rounded-xl"
+    (onHide)="displayDialog.set(false)">
+    
+    <div class="flex flex-col gap-4 pt-2">
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Placa del Vehículo <span class="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                pInputText
+                [ngModel]="formData().plate"
+                (ngModelChange)="updateFormPlate($event)"
+                placeholder="Ej: ABC-123"
+                class="w-full uppercase font-mono"
+                maxlength="10" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Categoría <span class="text-red-500">*</span>
+            </label>
+            <p-dropdown
+                [options]="vehicleCategories()"
+                [ngModel]="formData().category"
+                (onChange)="updateFormCategory($event.value)"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+                placeholder="Seleccione una categoría">
+            </p-dropdown>
+        </div>
+
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h4 class="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase mb-3 flex items-center gap-2">
+                <i class="pi pi-user"></i> Datos del Propietario
+            </h4>
+            
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Buscar Cliente Existente</label>
+                    <p-autoComplete
+                        [ngModel]="selectedClient()"
+                        [suggestions]="clientSuggestions()"
+                        (completeMethod)="searchClients($event)"
+                        (onSelect)="onClientSelect($event)"
+                        field="name"
+                        placeholder="Escriba para buscar..."
+                        [style]="{'width': '100%'}"
+                        inputStyleClass="w-full"
+                        [showClear]="true">
+                        <ng-template let-client pTemplate="item">
+                            <div class="flex items-center justify-between w-full">
+                                <span class="font-medium text-sm">{{ client.name }}</span>
+                                <span class="text-xs text-gray-500 bg-gray-100 px-1 rounded">{{ client.phone }}</span>
+                            </div>
+                        </ng-template>
+                    </p-autoComplete>
+                </div>
+
+                <div class="text-center text-xs text-gray-400 dark:text-gray-500 font-medium my-1">- O REGISTRE UNO NUEVO -</div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</label>
+                        <input
+                            type="text"
+                            pInputText
+                            [ngModel]="formData().clientName"
+                            (ngModelChange)="updateFormClientName($event)"
+                            placeholder="Nombre"
+                            class="w-full p-inputtext-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Teléfono</label>
+                        <input
+                            type="text"
+                            pInputText
+                            [ngModel]="formData().clientPhone"
+                            (ngModelChange)="updateFormClientPhone($event)"
+                            placeholder="0412-1234567"
+                            class="w-full p-inputtext-sm" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Notas Adicionales
+            </label>
+            <textarea
+                pInputTextarea
+                [ngModel]="formData().notes"
+                (ngModelChange)="updateFormNotes($event)"
+                placeholder="Detalles sobre el vehículo (color, marca, modelo...)"
+                [rows]="3"
+                class="w-full"
+                [autoResize]="true">
+            </textarea>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-4">
+            <p-button
+                label="Cancelar"
+                icon="pi pi-times"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="displayDialog.set(false)">
+            </p-button>
+            <p-button
+                [label]="isEditMode() ? 'Guardar Cambios' : 'Registrar Vehículo'"
+                icon="pi pi-check"
+                (onClick)="saveVehicle()"
+                styleClass="font-semibold">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

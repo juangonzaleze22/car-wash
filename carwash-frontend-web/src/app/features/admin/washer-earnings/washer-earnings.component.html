@@ -1,0 +1,321 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Ganancias de Lavadores</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Gestiona y marca como pagadas las comisiones del personal</p>
+        </div>
+        @if (selectedEarnings().length > 0) {
+            <p-button 
+                label="Marcar Pagadas ({{ selectedEarnings().length }})"
+                icon="pi pi-check-circle"
+                (onClick)="openMarkAsPaidDialog()"
+                [disabled]="!hasPendingSelected()"
+                styleClass="font-semibold shadow-md">
+            </p-button>
+        }
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado de Pago</label>
+                <p-dropdown
+                    [options]="statusOptions"
+                    [ngModel]="statusFilter()"
+                    (ngModelChange)="onStatusFilterChange($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    [showClear]="true"
+                    placeholder="Todos"
+                    styleClass="w-full">
+                </p-dropdown>
+            </div>
+
+            <!-- Washer Filter -->
+            @if (!isWasher()) {
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Lavador</label>
+                    <p-dropdown
+                        [options]="getWashersWithAllOption()"
+                        [ngModel]="washerFilter()"
+                        (ngModelChange)="onWasherFilterChange($event)"
+                        optionLabel="username"
+                        optionValue="id"
+                        [showClear]="true"
+                        placeholder="Todos el personal"
+                        styleClass="w-full">
+                    </p-dropdown>
+                </div>
+            }
+
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Desde</label>
+                <p-calendar
+                    [ngModel]="startDate()"
+                    (ngModelChange)="onStartDateChange($event)"
+                    [showIcon]="true"
+                    dateFormat="dd/mm/yy"
+                    placeholder="Fecha inicio"
+                    styleClass="w-full">
+                </p-calendar>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hasta</label>
+                <p-calendar
+                    [ngModel]="endDate()"
+                    (ngModelChange)="onEndDateChange($event)"
+                    [showIcon]="true"
+                    dateFormat="dd/mm/yy"
+                    placeholder="Fecha fin"
+                    styleClass="w-full">
+                </p-calendar>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Total Pending -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between shadow-sm">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Total Pendiente Global</p>
+                <h3 class="text-2xl font-bold text-orange-600 dark:text-orange-400">${{ getTotalPending() | number:'1.2-2' }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center border border-orange-100 dark:border-orange-800">
+                <i class="pi pi-clock text-orange-600 dark:text-orange-400 text-xl"></i>
+            </div>
+        </div>
+
+        <!-- Total Paid -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between shadow-sm">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Total Pagado (Período)</p>
+                <h3 class="text-2xl font-bold text-green-600 dark:text-green-400">${{ getTotalPaid() | number:'1.2-2' }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center border border-green-100 dark:border-green-800">
+                <i class="pi pi-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+            </div>
+        </div>
+
+        <!-- Total Services -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between shadow-sm">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Total Servicios</p>
+                <h3 class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ earnings().length }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800">
+                <i class="pi pi-list text-blue-600 dark:text-blue-400 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grouped Earnings -->
+    @if (loading()) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-8 text-center">
+            <i class="pi pi-spin pi-spinner text-4xl text-blue-500 dark:text-blue-400 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">Cargando ganancias...</p>
+        </div>
+    } @else if (getGroupedEarningsArray().length === 0) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+            <div class="flex flex-col items-center gap-3">
+                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                    <i class="pi pi-inbox text-3xl text-gray-400 dark:text-gray-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">No hay ganancias registradas</h3>
+                <p class="text-gray-500 dark:text-gray-400 max-w-sm">
+                    No se encontraron registros con los filtros seleccionados. Intenta cambiar las fechas o el estado.
+                </p>
+            </div>
+        </div>
+    } @else {
+        <div class="space-y-6">
+            @for (group of getGroupedEarningsArray(); track group.washerId) {
+                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <!-- Washer Header Card -->
+                    <div class="p-4 bg-gray-100 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <p-checkbox 
+                                [binary]="true"
+                                [ngModel]="isWasherAllSelected(group.washerId)"
+                                [ngModelOptions]="{standalone: true}"
+                                (ngModelChange)="toggleWasherSelection(group.washerId, $event)"
+                                [disabled]="getWasherPendingEarnings(group.earnings).length === 0"
+                                [class.p-checkbox-indeterminate]="isWasherPartiallySelected(group.washerId)">
+                            </p-checkbox>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">{{ group.washerName }}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ group.earnings.length }} servicios realizados</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <div class="text-right">
+                                <span class="block text-xs text-gray-500 dark:text-gray-400 font-medium uppercase">Total Pendiente</span>
+                                <span class="block text-lg font-bold text-orange-600 dark:text-orange-400">
+                                    ${{ getWasherPendingTotal(group.earnings) | number:'1.2-2' }}
+                                </span>
+                            </div>
+                            <div class="text-right pl-4 border-l border-gray-300 dark:border-gray-600">
+                                <span class="block text-xs text-gray-500 dark:text-gray-400 font-medium uppercase">Total Ganado</span>
+                                <span class="block text-lg font-bold text-green-700 dark:text-green-400">
+                                    ${{ getWasherTotal(group.earnings) | number:'1.2-2' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Earnings Table -->
+                    <p-table
+                        [value]="group.earnings"
+                        styleClass="p-datatable-striped p-datatable-sm"
+                        [tableStyle]="{'width': '100%'}">
+                        
+                        <ng-template pTemplate="header">
+                            <tr class="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                                <th style="width: 3rem" class="py-2 px-4"></th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4">Orden</th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4">Vehículo</th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4">Servicio</th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4 text-right">Comisión</th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4 text-center">Estado</th>
+                                <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-2 px-4">Fecha</th>
+                            </tr>
+                        </ng-template>
+
+                        <ng-template pTemplate="body" let-earning>
+                            <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0" 
+                                [ngClass]="{'bg-orange-50 dark:bg-orange-900/10': earning.status === 'PENDING'}">
+                                <td class="py-2 px-4 text-center">
+                                    @if (earning.status === 'PENDING') {
+                                        <p-checkbox 
+                                            [binary]="true"
+                                            [ngModel]="isSelected(earning)"
+                                            [ngModelOptions]="{standalone: true}"
+                                            (ngModelChange)="toggleSelection(earning)">
+                                        </p-checkbox>
+                                    }
+                                </td>
+                                <td class="py-2 px-4">
+                                    <span class="font-mono text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-700 dark:text-gray-300">
+                                        #{{ (earning.orderId + '').split('-')[0] }}
+                                    </span>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <div class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ earning.order?.vehicle?.plate || 'N/A' }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ earning.order?.vehicle?.brand }} {{ earning.order?.vehicle?.model }}</div>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ earning.orderItem?.service?.name || 'Servicio eliminado' }}</span>
+                                </td>
+                                <td class="py-2 px-4 text-right">
+                                    <span class="font-bold text-sm text-green-700 dark:text-green-400">
+                                        ${{ earning.commissionAmount | number:'1.2-2' }}
+                                    </span>
+                                </td>
+                                <td class="py-2 px-4 text-center">
+                                    <p-tag
+                                        [value]="getStatusLabel(earning.status)"
+                                        [severity]="getStatusSeverity(earning.status)"
+                                        styleClass="text-[10px] font-bold uppercase">
+                                    </p-tag>
+                                </td>
+                                <td class="py-2 px-4">
+                                    <div class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                        {{ earning.earnedAt | date:'d MMM, h:mm a' }}
+                                    </div>
+                                    @if (earning.paidAt) {
+                                        <div class="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                                            <i class="pi pi-check-circle text-[10px] mr-1"></i>
+                                            Pagado: {{ earning.paidAt | date:'d MMM' }}
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+            <p-paginator
+                [rows]="limit()"
+                [totalRecords]="total()"
+                [first]="(page() - 1) * limit()"
+                (onPageChange)="onPageChange($event)"
+                [rowsPerPageOptions]="[10, 25, 50]"
+                styleClass="bg-transparent border-0">
+            </p-paginator>
+        </div>
+    }
+</div>
+
+<!-- Mark as Paid Dialog -->
+<p-dialog
+    [visible]="showMarkAsPaidDialog()"
+    (visibleChange)="showMarkAsPaidDialog.set($event)"
+    header="Confirmar Pago de Comisiones"
+    [modal]="true"
+    [style]="{ width: '450px' }"
+    styleClass="rounded-xl"
+    [draggable]="false"
+    [focusOnShow]="false">
+    
+    <div class="pt-2">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4 flex items-start gap-3">
+            <i class="pi pi-info-circle text-blue-500 dark:text-blue-400 text-xl mt-0.5"></i>
+            <div>
+                <p class="text-blue-900 dark:text-blue-200 font-medium text-sm">Resumen de Pago</p>
+                <p class="text-blue-700 dark:text-blue-300 text-sm mt-1">
+                    Estás a punto de marcar como pagadas <strong>{{ getPendingSelectedCount() }}</strong> comisiones seleccionadas.
+                </p>
+                <div class="mt-2 text-xl font-bold text-blue-800 dark:text-blue-200">
+                    Total: ${{ getPendingSelectedTotal() | number:'1.2-2' }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Fecha de Pago Real</label>
+            <p-calendar
+                [ngModel]="markAsPaidDate()"
+                (ngModelChange)="markAsPaidDate.set($event)"
+                [showIcon]="true"
+                dateFormat="dd/mm/yy"
+                [showTime]="true"
+                [showButtonBar]="true"
+                placeholder="Hoy (Automático)"
+                styleClass="w-full"
+                appendTo="body">
+            </p-calendar>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Si lo dejas vacío, se registrará con la fecha y hora actual.</p>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2">
+            <p-button
+                label="Cancelar"
+                icon="pi pi-times"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="showMarkAsPaidDialog.set(false)">
+            </p-button>
+            <p-button
+                label="Confirmar Pago"
+                icon="pi pi-check"
+                severity="success"
+                (onClick)="confirmMarkAsPaid()"
+                [autofocus]="true">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

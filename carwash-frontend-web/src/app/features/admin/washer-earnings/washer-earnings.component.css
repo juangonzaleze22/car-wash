@@ -1,0 +1,49 @@
+/* Custom styles for washer earnings component */
+
+.washer-earnings-card {
+    margin-bottom: 1.5rem;
+}
+
+.washer-earnings-card ::ng-deep .p-card-body {
+    padding: 1.5rem;
+}
+
+.washer-earnings-card ::ng-deep .p-card-content {
+    padding: 0;
+}
+
+/* Espaciado entre cards */
+.space-y-6 > * + * {
+    margin-top: 1.5rem;
+}
+
+/* Estilo para filas pendientes */
+::ng-deep .p-datatable .p-datatable-tbody > tr.bg-yellow-50 {
+    background-color: #fffbeb !important;
+}
+
+::ng-deep .p-datatable .p-datatable-tbody > tr.bg-yellow-50:hover {
+    background-color: #fef3c7 !important;
+}
+
+/* Checkbox indeterminado */
+::ng-deep .p-checkbox.p-checkbox-indeterminate .p-checkbox-box {
+    background-color: var(--p-primary-color);
+    border-color: var(--p-primary-color);
+}
+
+::ng-deep .p-checkbox.p-checkbox-indeterminate .p-checkbox-box .p-checkbox-icon {
+    display: none;
+}
+
+::ng-deep .p-checkbox.p-checkbox-indeterminate .p-checkbox-box::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 2px;
+    background-color: white;
+    transform: translate(-50%, -50%);
+}
+

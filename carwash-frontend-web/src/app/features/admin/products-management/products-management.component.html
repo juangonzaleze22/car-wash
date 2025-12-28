@@ -1,0 +1,355 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Productos</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Administra el inventario de insumos y productos para la venta</p>
+        </div>
+        <p-button 
+            label="Nuevo Producto" 
+            icon="pi pi-plus"
+            (onClick)="openCreateModal()"
+            styleClass="font-semibold shadow-md">
+        </p-button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-4 p-4">
+        <div class="flex items-center gap-4">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por estado:</label>
+            <p-dropdown 
+                [options]="activeFilterOptions"
+                [ngModel]="selectedActiveFilter"
+                (onChange)="onActiveFilterChange($event.value)"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-64"
+                placeholder="Seleccione estado">
+            </p-dropdown>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-box"></i>
+                LISTA DE PRODUCTOS
+                @if (products.length > 0) {
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-normal bg-white dark:bg-gray-700 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+                        {{ products.length }}
+                    </span>
+                }
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table 
+                [value]="products" 
+                [loading]="loading"
+                [paginator]="true"
+                [rows]="10"
+                styleClass="p-datatable-striped p-datatable-sm"
+                [tableStyle]="{'min-width': '60rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4" pSortableColumn="name">Nombre <p-sortIcon field="name"></p-sortIcon></th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4" pSortableColumn="unit">Unidad <p-sortIcon field="unit"></p-sortIcon></th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4" pSortableColumn="currentStock">Stock Actual <p-sortIcon field="currentStock"></p-sortIcon></th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4" pSortableColumn="minStock">Mínimo <p-sortIcon field="minStock"></p-sortIcon></th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4" pSortableColumn="isActive">Estado <p-sortIcon field="isActive"></p-sortIcon></th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-product>
+                    <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-2">
+                                @if ((product.currentStock || 0) <= product.minStock) {
+                                    <i class="pi pi-exclamation-triangle text-red-500 text-lg animate-pulse" pTooltip="Stock Bajo" tooltipPosition="right"></i>
+                                }
+                                <div>
+                                    <span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ product.name }}</span>
+                                    @if(product.description) {
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ product.description }}</div>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-medium">{{ product.unit }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @if ((product.currentStock || 0) <= product.minStock) {
+                                <div class="flex items-center gap-2">
+                                    <p-tag [value]="(product.currentStock | number:'1.0-2') ?? '0'" severity="danger" styleClass="font-bold"></p-tag>
+                                    <span class="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase tracking-wider bg-red-50 dark:bg-red-900/20 px-1 py-0.5 rounded border border-red-100 dark:border-red-800">Reposición</span>
+                                </div>
+                            } @else {
+                                <p-tag [value]="(product.currentStock | number:'1.0-2') ?? '0'" severity="success" styleClass="text-xs font-bold"></p-tag>
+                            }
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ product.minStock }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag 
+                                [value]="product.isActive ? 'Activo' : 'Inactivo'" 
+                                [severity]="product.isActive ? 'success' : 'danger'"
+                                styleClass="text-[10px] uppercase font-bold px-2"></p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                <p-button 
+                                    icon="pi pi-history" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="secondary"
+                                    size="small"
+                                    pTooltip="Ver Kardex (Historial)"
+                                    (onClick)="viewHistory(product)"></p-button>
+                                <p-button 
+                                    icon="pi pi-pencil" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="info"
+                                    size="small"
+                                    pTooltip="Editar"
+                                    (onClick)="openEditModal(product)"></p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-box text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No hay productos registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Product Dialog -->
+<p-dialog 
+    [header]="isEditing ? 'Editar Producto' : 'Nuevo Producto'"
+    [(visible)]="showModal"
+    [modal]="true"
+    [style]="{width: '100%', 'max-width': '500px'}"
+    [closable]="true"
+    (onHide)="closeModal()"
+    styleClass="rounded-xl p-fluid"
+    [draggable]="false"
+    appendTo="body">
+    
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 pt-2">
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Nombre del Producto <span class="text-red-500">*</span>
+            </label>
+            <input 
+                pInputText 
+                formControlName="name"
+                placeholder="Ej: Champú Automotriz"
+                class="w-full" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Descripción
+            </label>
+            <textarea 
+                pInputTextarea 
+                formControlName="description"
+                rows="3"
+                placeholder="Descripción opcional"
+                class="w-full"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Unidad de Medida <span class="text-red-500">*</span>
+                </label>
+                <p-dropdown 
+                    [options]="unitOptions"
+                    formControlName="unit"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    placeholder="Seleccione">
+                </p-dropdown>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Stock Mínimo <span class="text-red-500">*</span>
+                </label>
+                <p-inputNumber 
+                    formControlName="minStock"
+                    [min]="0"
+                    [showButtons]="true"
+                    buttonLayout="horizontal"
+                    decrementButtonClass="p-button-secondary"
+                    incrementButtonClass="p-button-secondary"
+                    incrementButtonIcon="pi pi-plus"
+                    decrementButtonIcon="pi pi-minus"
+                    styleClass="w-full text-center"
+                    [inputStyle]="{'text-align': 'center', 'width': '100%'}">
+                </p-inputNumber>
+            </div>
+        </div>
+
+        @if (!isEditing) {
+            <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Stock Inicial
+                </label>
+                <p-inputNumber 
+                    formControlName="currentStock"
+                    [min]="0"
+                    [showButtons]="true"
+                    buttonLayout="horizontal"
+                    decrementButtonClass="p-button-secondary"
+                    incrementButtonClass="p-button-secondary"
+                    incrementButtonIcon="pi pi-plus"
+                    decrementButtonIcon="pi pi-minus"
+                    styleClass="w-full"
+                    [inputStyle]="{'text-align': 'center', 'width': '100%'}">
+                </p-inputNumber>
+                <small class="text-gray-500 dark:text-gray-400 text-xs mt-2 block flex items-center gap-1">
+                    <i class="pi pi-info-circle"></i>
+                    Solo para carga inicial. Para compras futuras use el módulo de Gastos.
+                </small>
+            </div>
+        }
+
+        <div class="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <p-checkbox formControlName="isActive" [binary]="true" inputId="isActive"></p-checkbox>
+            <label for="isActive" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">Producto Activo y Disponible</label>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-2">
+            <p-button 
+                label="Cancelar" 
+                icon="pi pi-times" 
+                (onClick)="closeModal()"
+                severity="secondary"
+                [outlined]="true">
+            </p-button>
+            <p-button 
+                [label]="isEditing ? 'Actualizar Producto' : 'Crear Producto'" 
+                icon="pi pi-check" 
+                (onClick)="onSubmit()"
+                [disabled]="productForm.invalid"
+                styleClass="font-semibold shadow-md">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- Kardex History Dialog -->
+<p-dialog 
+    [(visible)]="showHistoryModal" 
+    [header]="'Kardex de Inventario: ' + (selectedProduct?.name || '')" 
+    [modal]="true" 
+    [style]="{width: '900px', 'max-width': '95vw'}" 
+    [closable]="true"
+    [draggable]="false"
+    (onHide)="closeHistoryModal()"
+    styleClass="rounded-xl">
+    
+    <div class="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-4">
+            <div class="bg-white dark:bg-gray-800 p-2 rounded-full shadow-sm">
+                <i class="pi pi-box text-2xl text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Stock Físico Actual</p>
+                <p class="text-3xl font-bold text-blue-800 dark:text-blue-300">{{ selectedProduct?.currentStock }} <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ selectedProduct?.unit }}</span></p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Mínimo Requerido</p>
+            <p class="text-xl font-bold text-gray-700 dark:text-gray-300">{{ selectedProduct?.minStock }} <span class="text-xs font-normal">{{ selectedProduct?.unit }}</span></p>
+        </div>
+    </div>
+
+    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <p-table 
+            [value]="productMovements" 
+            [loading]="kardexLoading"
+            [paginator]="true"
+            [rows]="kardexLimit"
+            [totalRecords]="kardexTotal"
+            [lazy]="true"
+            (onLazyLoad)="onKardexPageChange($event)"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} movimientos"
+            styleClass="p-datatable-sm p-datatable-striped">
+            <ng-template pTemplate="header">
+                <tr class="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-700">
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Fecha</th>
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Tipo</th>
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Inicial</th>
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Movimiento</th>
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Final</th>
+                    <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Detalle / Notas</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-move>
+                <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                    <td class="text-sm text-gray-600 dark:text-gray-400 py-3 px-4 font-medium">{{ move.createdAt | date:"d MMM, h:mm a" }}</td>
+                    <td class="py-3 px-4">
+                        <p-tag [value]="getMovementLabel(move.type)" [severity]="getMovementSeverity(move.type)" styleClass="text-[10px] uppercase font-bold px-2 py-0.5"></p-tag>
+                    </td>
+                    <td class="text-center text-sm text-gray-500 dark:text-gray-400 font-mono py-3 px-4">{{ move.previousStock }}</td>
+                    <td class="text-center font-bold text-sm py-3 px-4" 
+                        [class.text-green-600]="move.quantity > 0" 
+                        [class.dark:text-green-400]="move.quantity > 0" 
+                        [class.text-red-600]="move.quantity < 0"
+                        [class.dark:text-red-400]="move.quantity < 0">
+                        {{ move.quantity > 0 ? '+' : '' }}{{ move.quantity }}
+                    </td>
+                    <td class="text-center font-bold text-sm text-gray-800 dark:text-gray-200 font-mono bg-gray-100 dark:bg-gray-800 py-3 px-4">{{ move.newStock }}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex flex-col">
+                            @if (move.expense) {
+                                <span class="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                    <i class="pi pi-receipt"></i> Gasto Vinculado
+                                </span>
+                            }
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ move.notes || '-' }}</span>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Por: {{ move.createdBy?.name || 'Sistema' }}</span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="6" class="text-center py-12">
+                        <div class="flex flex-col items-center gap-2">
+                            <i class="pi pi-list text-3xl text-gray-300 dark:text-gray-600"></i>
+                            <span class="text-gray-500 dark:text-gray-400 font-medium">No se encontraron movimientos registrados</span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+    
+    <ng-template pTemplate="footer">
+        <div class="pt-4">
+            <p-button label="Cerrar" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="closeHistoryModal()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>

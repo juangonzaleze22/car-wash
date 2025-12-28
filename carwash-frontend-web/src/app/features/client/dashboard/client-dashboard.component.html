@@ -1,0 +1,353 @@
+<p-toast></p-toast>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    @if (loading()) {
+    <!-- Loading Skeletons -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        @for (item of [1,2,3]; track item) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 h-32">
+            <p-skeleton width="40%" height="1.5rem" styleClass="mb-2"></p-skeleton>
+            <p-skeleton width="80%" height="3rem"></p-skeleton>
+        </div>
+        }
+    </div>
+    } @else if (dashboard()) {
+    <!-- Header -->
+    <div
+        class="mb-6 flex justify-between items-center bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 dark:text-white mb-1 tracking-tight">¡Hola, {{
+                dashboard()!.client.name }}! 👋</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium tracking-tight">Gestiona tus servicios de
+                lavado hoy</p>
+        </div>
+        <div class="flex gap-3">
+            <p-button label="Mis Solicitudes" icon="pi pi-history" routerLink="/client/requests"
+                styleClass="p-button-rounded p-button-outlined p-button-sm font-bold shadow-sm">
+            </p-button>
+            <p-button label="Solicitar Lavado" icon="pi pi-plus" routerLink="/client/request-wash"
+                styleClass="p-button-rounded p-button-primary p-button-sm font-bold shadow-md">
+            </p-button>
+        </div>
+    </div>
+
+    <!-- Debug: Verificar que pendingOrders existe -->
+    @if (!dashboard()!.pendingOrders) {
+    <div class="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-4 mb-4">
+        <p class="text-red-800 dark:text-red-300 text-sm">Error: pendingOrders no está definido en la respuesta del
+            servidor</p>
+    </div>
+    }
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Total de Lavados -->
+        <div
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="pi pi-car text-6xl text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total de
+                    Lavados</p>
+                <h3 class="text-2xl font-bold text-blue-900 dark:text-blue-300">
+                    {{ dashboard()!.kpis.totalOrders }}
+                </h3>
+            </div>
+        </div>
+
+        <!-- Total Gastado -->
+        <div
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="pi pi-dollar text-6xl text-green-600 dark:text-green-400"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total
+                    Gastado</p>
+                <h3 class="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {{ formatUSD(dashboard()!.kpis.totalSpent) }}
+                </h3>
+            </div>
+        </div>
+
+        <!-- Promedio por Lavado -->
+        <div
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 relative overflow-hidden group hover:shadow-md transition-all">
+            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="pi pi-chart-line text-6xl text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Promedio por
+                    Lavado</p>
+                <h3 class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {{ formatUSD(dashboard()!.kpis.averageOrderValue) }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Órdenes Pendientes -->
+    <div class="mb-6">
+        <div class="mb-4">
+            <h3
+                class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-clock text-blue-500"></i>
+                Órdenes Pendientes
+            </h3>
+        </div>
+
+        @if (!dashboard()!.pendingOrders || dashboard()!.pendingOrders.length === 0) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="text-center py-12">
+                <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                <p class="text-gray-500 dark:text-gray-400">No tienes órdenes pendientes</p>
+            </div>
+        </div>
+        } @else {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (order of dashboard()!.pendingOrders; track order.id) {
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden hover:shadow-md transition-all">
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Placa</p>
+                            <p class="text-lg font-bold text-gray-800 dark:text-white">{{ order.plate }}</p>
+                        </div>
+                        <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"
+                            styleClass="text-[10px] uppercase font-bold">
+                        </p-tag>
+                    </div>
+
+                    <!-- Timeline del estado -->
+                    <div class="py-2">
+                        <div class="flex items-center gap-2">
+                            <!-- Paso 1: Recibida -->
+                            <div class="flex flex-col items-center flex-shrink-0">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center"
+                                    [class.bg-blue-500]="isStepActiveForOrder(order, 'RECEIVED')"
+                                    [class.bg-gray-300]="!isStepActiveForOrder(order, 'RECEIVED')"
+                                    [class.dark:bg-blue-500]="isStepActiveForOrder(order, 'RECEIVED')"
+                                    [class.dark:bg-gray-600]="!isStepActiveForOrder(order, 'RECEIVED')">
+                                    <i class="pi pi-check text-white text-[10px]"></i>
+                                </div>
+                                <span
+                                    class="text-[10px] mt-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">Recibida</span>
+                            </div>
+                            <div class="flex-1 h-0.5 min-w-[20px]"
+                                [class.bg-blue-500]="isStepCompletedForOrder(order, 'RECEIVED')"
+                                [class.bg-gray-300]="!isStepCompletedForOrder(order, 'RECEIVED')"
+                                [class.dark:bg-blue-500]="isStepCompletedForOrder(order, 'RECEIVED')"
+                                [class.dark:bg-gray-600]="!isStepCompletedForOrder(order, 'RECEIVED')">
+                            </div>
+                            <!-- Paso 2: En Proceso -->
+                            <div class="flex flex-col items-center flex-shrink-0">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center"
+                                    [class.bg-blue-500]="isStepActiveForOrder(order, 'IN_PROGRESS')"
+                                    [class.bg-gray-300]="!isStepActiveForOrder(order, 'IN_PROGRESS')"
+                                    [class.dark:bg-blue-500]="isStepActiveForOrder(order, 'IN_PROGRESS')"
+                                    [class.dark:bg-gray-600]="!isStepActiveForOrder(order, 'IN_PROGRESS')">
+                                    @if (order.status === 'IN_PROGRESS') {
+                                    <i class="pi pi-spin pi-spinner text-white text-[10px]"></i>
+                                    } @else {
+                                    <i class="pi pi-check text-white text-[10px]"></i>
+                                    }
+                                </div>
+                                <span class="text-[10px] mt-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">En
+                                    Proceso</span>
+                            </div>
+                            <div class="flex-1 h-0.5 min-w-[20px]"
+                                [class.bg-blue-500]="isStepCompletedForOrder(order, 'IN_PROGRESS')"
+                                [class.bg-gray-300]="!isStepCompletedForOrder(order, 'IN_PROGRESS')"
+                                [class.dark:bg-blue-500]="isStepCompletedForOrder(order, 'IN_PROGRESS')"
+                                [class.dark:bg-gray-600]="!isStepCompletedForOrder(order, 'IN_PROGRESS')">
+                            </div>
+                            <!-- Paso 3: Pendiente por Pago -->
+                            <div class="flex flex-col items-center flex-shrink-0">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center"
+                                    [class.bg-yellow-500]="order.status === 'WAITING_PAYMENT'"
+                                    [class.bg-blue-500]="isStepActiveForOrder(order, 'QUALITY_CHECK') || (isStepActiveForOrder(order, 'WAITING_PAYMENT') && order.status !== 'WAITING_PAYMENT')"
+                                    [class.bg-gray-300]="!(isStepActiveForOrder(order, 'QUALITY_CHECK') || isStepActiveForOrder(order, 'WAITING_PAYMENT'))"
+                                    [class.dark:bg-yellow-500]="order.status === 'WAITING_PAYMENT'"
+                                    [class.dark:bg-blue-500]="isStepActiveForOrder(order, 'QUALITY_CHECK') || (isStepActiveForOrder(order, 'WAITING_PAYMENT') && order.status !== 'WAITING_PAYMENT')"
+                                    [class.dark:bg-gray-600]="!(isStepActiveForOrder(order, 'QUALITY_CHECK') || isStepActiveForOrder(order, 'WAITING_PAYMENT'))">
+                                    @if (order.status === 'WAITING_PAYMENT') {
+                                    <i class="pi pi-clock text-white text-[10px]"></i>
+                                    } @else {
+                                    <i class="pi pi-check text-white text-[10px]"></i>
+                                    }
+                                </div>
+                                <span
+                                    class="text-[10px] mt-1 text-gray-600 dark:text-gray-400 whitespace-nowrap text-center">Pendiente
+                                    por Pago</span>
+                            </div>
+                            <div class="flex-1 h-0.5 min-w-[20px]"
+                                [class.bg-green-500]="isStepActiveForOrder(order, 'COMPLETED')"
+                                [class.bg-yellow-500]="order.status === 'WAITING_PAYMENT'"
+                                [class.bg-blue-500]="isStepCompletedForOrder(order, 'IN_PROGRESS') && order.status !== 'WAITING_PAYMENT' && !isStepActiveForOrder(order, 'COMPLETED')"
+                                [class.bg-gray-300]="!isStepActiveForOrder(order, 'COMPLETED') && order.status !== 'WAITING_PAYMENT'"
+                                [class.dark:bg-green-500]="isStepActiveForOrder(order, 'COMPLETED')"
+                                [class.dark:bg-yellow-500]="order.status === 'WAITING_PAYMENT'"
+                                [class.dark:bg-blue-500]="isStepCompletedForOrder(order, 'IN_PROGRESS') && order.status !== 'WAITING_PAYMENT' && !isStepActiveForOrder(order, 'COMPLETED')"
+                                [class.dark:bg-gray-600]="!isStepActiveForOrder(order, 'COMPLETED') && order.status !== 'WAITING_PAYMENT'">
+                            </div>
+                            <!-- Paso 4: Completada -->
+                            <div class="flex flex-col items-center flex-shrink-0">
+                                <div class="w-6 h-6 rounded-full flex items-center justify-center"
+                                    [class.bg-green-500]="isStepActiveForOrder(order, 'COMPLETED')"
+                                    [class.bg-gray-300]="!isStepActiveForOrder(order, 'COMPLETED')"
+                                    [class.dark:bg-green-500]="isStepActiveForOrder(order, 'COMPLETED')"
+                                    [class.dark:bg-gray-600]="!isStepActiveForOrder(order, 'COMPLETED')">
+                                    <i class="pi pi-check text-white text-[10px]"></i>
+                                </div>
+                                <span
+                                    class="text-[10px] mt-1 text-gray-600 dark:text-gray-400 whitespace-nowrap">Completada</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Total</p>
+                            <p class="text-lg font-bold text-green-600 dark:text-green-400">{{
+                                formatUSD(order.totalAmount) }}</p>
+                            @if (exchangeRate() > 0) {
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatVES(order.totalAmount) }}</p>
+                            }
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                Tiempo</p>
+                            <p class="text-sm font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                <i class="pi pi-clock text-xs"></i>
+                                {{ formatElapsedTime(order.elapsedMinutes) }}
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (order.washers && order.washers.length > 0) {
+                    <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                            Lavador(es)</p>
+                        <div class="flex flex-wrap gap-2">
+                            @for (washer of order.washers; track washer.id) {
+                            <span
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800 text-xs font-medium">
+                                <i class="pi pi-user text-xs"></i>
+                                {{ washer.name }}
+                            </span>
+                            }
+                        </div>
+                    </div>
+                    }
+
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                            Servicios</p>
+                        <div class="space-y-1">
+                            @for (service of order.services; track service.name) {
+                            <div
+                                class="flex justify-between items-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                                <span class="text-xs text-gray-800 dark:text-gray-200 truncate">{{ service.name
+                                    }}</span>
+                                <span class="font-bold text-xs text-gray-800 dark:text-white ml-2">{{
+                                    formatUSD(service.price) }}</span>
+                            </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    }
+
+    <!-- Order Details Dialog -->
+    <p-dialog header="Detalles de la Orden" [visible]="showOrderDialog()" (visibleChange)="showOrderDialog.set($event)"
+        [modal]="true" [style]="{width: '600px'}" styleClass="rounded-xl">
+
+        @if (loadingOrder()) {
+        <div class="flex justify-center py-8">
+            <i class="pi pi-spin pi-spinner text-4xl text-blue-500"></i>
+        </div>
+        } @else if (selectedOrder()) {
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Placa
+                    </p>
+                    <p class="font-bold text-gray-800 dark:text-white">{{ selectedOrder()!.plate }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Estado
+                    </p>
+                    <p-tag [value]="getStatusLabel(selectedOrder()!.status)"
+                        [severity]="getStatusSeverity(selectedOrder()!.status)"
+                        styleClass="text-[10px] uppercase font-bold">
+                    </p-tag>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Servicios
+                </p>
+                <div class="space-y-2">
+                    @for (service of selectedOrder()!.services; track service.id) {
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-semibold text-sm text-gray-800 dark:text-white">{{ service.name }}</p>
+                                @if (service.assignedWasher) {
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Lavador: {{
+                                    service.assignedWasher.name }}</p>
+                                }
+                            </div>
+                            <p class="font-bold text-gray-800 dark:text-white">{{ formatUSD(service.price) }}</p>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-gray-800 dark:text-white">Total</span>
+                    <div class="text-right">
+                        <span class="text-2xl font-bold text-green-600 dark:text-green-400">{{
+                            formatUSD(selectedOrder()!.totalAmount) }}</span>
+                        @if (exchangeRate() > 0) {
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ formatVES(selectedOrder()!.totalAmount)
+                            }}</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (selectedOrder()!.payments.length > 0) {
+            <div>
+                <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Pagos</p>
+                <div class="space-y-2">
+                    @for (payment of selectedOrder()!.payments; track payment.createdAt) {
+                    <div
+                        class="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800 dark:text-white">{{ payment.method }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ payment.createdAt | date:'short' }}
+                            </p>
+                        </div>
+                        <p class="font-bold text-gray-800 dark:text-white">{{ payment.currency }} {{
+                            formatUSD(payment.amount) }}</p>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </p-dialog>
+</div>

@@ -1,0 +1,49 @@
+/* Estilos del modal de cancelación */
+::ng-deep .cancel-order-dialog .p-dialog-header {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-bottom: 2px solid #fbbf24;
+    padding: 1.25rem 1.5rem;
+}
+
+::ng-deep .cancel-order-dialog .p-dialog-header .p-dialog-title {
+    font-weight: 700;
+    color: #92400e;
+    font-size: 1.125rem;
+}
+
+::ng-deep .cancel-order-dialog .p-dialog-content {
+    padding: 1.5rem;
+    background: #fafafa;
+}
+
+::ng-deep .cancel-order-dialog .p-dialog-footer {
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Estilos del textarea */
+::ng-deep .cancel-textarea .p-inputtextarea {
+    width: 100%;
+    min-height: 400px;
+    max-height: 500px;
+    padding: 0.875rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+::ng-deep .cancel-textarea .p-inputtextarea:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    outline: none;
+}
+
+::ng-deep .cancel-textarea .p-inputtextarea::placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+

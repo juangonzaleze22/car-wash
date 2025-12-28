@@ -1,0 +1,121 @@
+@if (loading()) {
+<div class="text-center py-12">
+    <i class="pi pi-spin pi-spinner text-4xl text-gray-400 dark:text-gray-500"></i>
+    <p class="text-gray-500 dark:text-gray-400 mt-4">Cargando órdenes...</p>
+</div>
+} @else if (orders().length === 0) {
+<div class="text-center py-12">
+    <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+    <p class="text-gray-500 dark:text-gray-400 font-medium mt-4">No se encontraron órdenes</p>
+</div>
+} @else {
+<div class="flex flex-col gap-3 p-4">
+    @for (order of orders(); track order.id) {
+    <div
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 hover:shadow-md dark:hover:shadow-lg transition-shadow relative">
+        <div class="flex items-center gap-3">
+            <!-- Left: Main Info -->
+            <div class="flex-1 min-w-0 pr-8">
+                <div class="flex items-center gap-2 mb-1">
+                    <i class="pi pi-car text-blue-500 dark:text-blue-400 text-sm"></i>
+                    <span class="font-bold text-base text-gray-900 dark:text-gray-100">{{ order.vehicle.plate }}</span>
+                    <span class="font-mono text-xs text-gray-400 dark:text-gray-500">#{{ order.id }}</span>
+                    <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"
+                        styleClass="text-[10px]"></p-tag>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="flex items-center gap-1">
+                        <i class="pi pi-user text-gray-400 dark:text-gray-500"></i>
+                        {{ order.vehicle.client.name }}
+                    </span>
+                    <span class="text-gray-400 dark:text-gray-600">•</span>
+                    <span class="flex items-center gap-1">
+                        <i class="pi pi-phone text-gray-400 dark:text-gray-500"></i>
+                        {{ order.vehicle.client.phone }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Center: Services & Type -->
+            <div class="hidden sm:flex flex-col gap-1.5 min-w-0 flex-1">
+                <div class="flex flex-wrap gap-1">
+                    @for (item of order.items.slice(0, 2); track item.service.name) {
+                    <span
+                        class="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">{{
+                        item.service.name }}</span>
+                    }
+                    @if (order.items.length > 2) {
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400">+{{ order.items.length - 2 }}</span>
+                    }
+                </div>
+                <div class="flex items-center gap-2">
+                    <p-tag [value]="order.vehicle.category" severity="info" styleClass="text-[10px]"></p-tag>
+                    @if (order.items[0] && order.items[0].assignedWasher) {
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <i class="pi pi-user text-gray-400 dark:text-gray-500"></i>
+                        {{ order.items[0].assignedWasher.username }}
+                    </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Total, Date & Actions -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="text-right hidden sm:block">
+                    <div class="font-bold text-base text-gray-900 dark:text-gray-100">${{ order.totalAmount |
+                        number:'1.2-2' }}</div>
+                    <div class="text-[10px] text-gray-500 dark:text-gray-400">{{ order.createdAt | date:'dd/MM/yy' }}
+                    </div>
+                </div>
+                <div class="flex gap-1 items-center">
+                    <!-- Cancellation Reason Button (if cancelled) -->
+                    @if (order.status === 'CANCELLED' && order.cancellationReason) {
+                    <p-button icon="pi pi-comment" [rounded]="true" [text]="true" severity="secondary" size="small"
+                        pTooltip="Ver motivo de cancelación"
+                        (onClick)="onShowCancellationReason.emit(order)"></p-button>
+                    }
+
+                    <p-button icon="pi pi-eye" [rounded]="true" [text]="true" severity="info" size="small"
+                        pTooltip="Ver detalles" (onClick)="onViewDetail.emit(order)"></p-button>
+                    @if (order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && !isOrderFullyPaid(order)) {
+                    <p-button icon="pi pi-money-bill" [rounded]="true" [text]="true" severity="success" size="small"
+                        pTooltip="Pagar" (onClick)="onProcessPayment.emit(order)"></p-button>
+                    }
+
+                    <!-- Status Change Menu (al final) -->
+                    <p-button icon="pi pi-ellipsis-v" [rounded]="true" [text]="true" severity="secondary" size="small"
+                        styleClass="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        #menuBtn type="button" (click)="menu.toggle($event)"></p-button>
+                    <p-menu #menu [model]="getStatusMenuItems(order)" [popup]="true" [appendTo]="'body'">
+                    </p-menu>
+
+                    <!-- Delete Button (Only for Admin) -->
+                    @if (isAdmin()) {
+                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" size="small"
+                        pTooltip="Eliminar orden" (onClick)="onDelete.emit(order)"></p-button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile: Additional Info (hidden on larger screens) -->
+        <div class="sm:hidden mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex flex-wrap gap-1">
+                    @for (item of order.items.slice(0, 2); track item.service.name) {
+                    <span
+                        class="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded">{{
+                        item.service.name }}</span>
+                    }
+                    @if (order.items.length > 2) {
+                    <span class="text-[10px] text-gray-500 dark:text-gray-400">+{{ order.items.length - 2 }}</span>
+                    }
+                </div>
+                <div class="font-bold text-sm text-gray-900 dark:text-gray-100">${{ order.totalAmount | number:'1.2-2'
+                    }}</div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+}

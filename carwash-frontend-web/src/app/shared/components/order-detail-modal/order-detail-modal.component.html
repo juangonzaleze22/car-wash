@@ -1,0 +1,365 @@
+<p-dialog 
+    [visible]="visible()" 
+    [modal]="true"
+    [style]="{width: '95vw', maxWidth: '1000px', maxHeight: '90vh'}"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="handleClose()"
+    [closable]="false" 
+    styleClass="p-0 overflow-hidden rounded-xl order-detail-dialog"
+    [showHeader]="false" 
+    appendTo="body">
+    
+    <div class="flex flex-col bg-gray-50 dark:bg-gray-900 h-full transition-colors duration-300" *ngIf="order()">
+        
+        <!-- HEADER PERSONALIZADO -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b-2 border-blue-200 dark:border-gray-700 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="pi pi-file-edit text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white m-0">Orden #{{ order()!.id }}</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 m-0">Detalles de la orden</p>
+                </div>
+                <p-tag [value]="getStatusLabel(order()!.status)" [severity]="getStatusSeverity(order()!.status)" styleClass="text-xs font-bold uppercase"></p-tag>
+            </div>
+            
+            <button 
+                pButton 
+                type="button" 
+                icon="pi pi-times" 
+                class="p-button-rounded p-button-text p-button-secondary !w-9 !h-9 !p-0 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                (click)="handleClose()">
+            </button>
+        </div>
+
+        <!-- CONTENIDO CON SCROLL -->
+        <div class="overflow-y-auto flex-1 custom-scrollbar">
+            <p-tabView styleClass="custom-tabview">
+                
+                <!-- TAB 1: RESUMEN GENERAL -->
+                <p-tabPanel header="General" leftIcon="pi pi-home">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 max-w-6xl mx-auto">
+                            
+                            <!-- Columna Izquierda -->
+                            <div class="space-y-6">
+                                <!-- Cliente y Vehículo -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                            <i class="pi pi-user text-blue-600 dark:text-blue-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Cliente</h3>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <p class="text-lg font-semibold text-gray-900 dark:text-white m-0">{{ order()!.vehicle.client.name }}</p>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <i class="pi pi-phone text-xs text-gray-400 dark:text-gray-500"></i>
+                                                <span class="text-sm text-gray-600 dark:text-gray-400">{{ order()!.vehicle.client.phone }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-6 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                            <div>
+                                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Placa</span>
+                                                <span class="text-base font-bold font-mono text-gray-900 dark:text-white">{{ order()!.vehicle.plate }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 block mb-1">Tipo</span>
+                                                <p-tag [value]="order()!.vehicle.category" severity="info" styleClass="text-xs"></p-tag>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Servicios -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+                                                <i class="pi pi-list text-green-600 dark:text-green-400 text-sm"></i>
+                                            </div>
+                                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Servicios</h3>
+                                        </div>
+                                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ order()!.items.length }} {{ order()!.items.length === 1 ? 'servicio' : 'servicios' }}</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        @for (item of order()!.items; track item.service.name) {
+                                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-100 dark:border-gray-600">
+                                                <div class="flex items-start justify-between">
+                                                    <div class="flex-1">
+                                                        <p class="text-base font-semibold text-gray-900 dark:text-white m-0 mb-2">{{ item.service.name }}</p>
+                                                        @if (item.assignedWasher) {
+                                                            <div class="flex items-center gap-2">
+                                                                <i class="pi pi-user text-xs text-blue-500 dark:text-blue-400"></i>
+                                                                <span class="text-sm text-gray-600 dark:text-gray-400">{{ item.assignedWasher.username }}</span>
+                                                            </div>
+                                                        } @else {
+                                                            <span class="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1">
+                                                                <i class="pi pi-exclamation-circle text-xs"></i>
+                                                                Sin asignar
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                    <div class="text-right ml-6">
+                                                        <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ formatUSD(item.service.price) }}</span>
+                                                        @if (exchangeRate() > 0) {
+                                                            <span class="text-xs text-gray-500 dark:text-gray-400 block mt-1">{{ formatVES(convertToVES(item.service.price)) }}</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Información Adicional -->
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                                            <i class="pi pi-info-circle text-purple-600 dark:text-purple-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Información Adicional</h3>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Creado</span>
+                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ order()!.createdAt | date:'dd/MM/yy HH:mm' }}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700">
+                                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Supervisor</span>
+                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ order()!.supervisor?.username || 'N/A' }}</span>
+                                        </div>
+                                        @if (hasServiceDuration()) {
+                                            <div class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-700">
+                                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Duración</span>
+                                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ getServiceDuration() }}</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Motivo Cancelación -->
+                                @if (order()!.status === 'CANCELLED' && order()!.cancellationReason) {
+                                    <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-5">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i class="pi pi-exclamation-circle text-red-600 dark:text-red-400"></i>
+                                            <h4 class="text-sm font-bold text-red-800 dark:text-red-300 uppercase m-0">Motivo de Cancelación</h4>
+                                        </div>
+                                        <p class="text-sm text-red-700 dark:text-red-400 m-0 leading-relaxed">{{ order()!.cancellationReason }}</p>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Columna Derecha: Resumen de Pago -->
+                            <div>
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm sticky top-6">
+                                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                            <i class="pi pi-dollar text-gray-600 dark:text-gray-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Resumen de Pago</h3>
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Total de la Orden</span>
+                                            <div class="text-right">
+                                                <span class="text-base font-semibold text-gray-900 dark:text-white block">{{ formatUSD(order()!.totalAmount) }}</span>
+                                                @if (exchangeRate() > 0) {
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatVES(convertToVES(order()!.totalAmount)) }}</span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Total Pagado</span>
+                                            <span class="text-base font-semibold text-green-600 dark:text-green-400">{{ formatUSD(getTotalPaidUSD()) }}</span>
+                                        </div>
+
+                                        @if (!isOrderFullyPaid()) {
+                                            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Restante</span>
+                                                <span class="text-base font-semibold text-orange-600 dark:text-orange-400">{{ formatUSD(getRemainingAmount()) }}</span>
+                                            </div>
+                                        }
+
+                                        <div class="flex items-center justify-between pt-2">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Estado</span>
+                                            <p-tag 
+                                                [value]="isOrderFullyPaid() ? 'PAGADO' : 'PENDIENTE'" 
+                                                [severity]="isOrderFullyPaid() ? 'success' : 'warning'"
+                                                styleClass="text-xs">
+                                            </p-tag>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </p-tabPanel>
+
+                <!-- TAB 2: PAGOS -->
+                <p-tabPanel header="Pagos" leftIcon="pi pi-money-bill">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 max-w-6xl mx-auto">
+                            
+                            <!-- Columna Izquierda: Lista de Pagos -->
+                            <div>
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+                                            <i class="pi pi-money-bill text-green-600 dark:text-green-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Historial de Pagos</h3>
+                                        @if (order()!.payments && order()!.payments.length > 0) {
+                                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded ml-auto">{{ order()!.payments.length }} {{ order()!.payments.length === 1 ? 'pago' : 'pagos' }}</span>
+                                        }
+                                    </div>
+                                    
+                                    @if (order()!.payments && order()!.payments.length > 0) {
+                                        <div class="space-y-2">
+                                            @for (payment of order()!.payments; track payment.createdAt) {
+                                                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 border border-gray-100 dark:border-gray-600">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-center gap-2 mb-1.5">
+                                                                <p class="text-sm font-semibold text-gray-900 dark:text-white m-0">{{ getMethodLabel(payment.method) }}</p>
+                                                                <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 rounded">{{ payment.currency }}</span>
+                                                            </div>
+                                                            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                                                <span>{{ payment.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                                                                @if (payment.cashier) {
+                                                                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                                    <span>{{ payment.cashier.username }}</span>
+                                                                }
+                                                                @if (payment.reference) {
+                                                                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                                                                    <span class="font-mono">Ref: {{ payment.reference }}</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-right ml-4 flex-shrink-0">
+                                                            @if (payment.currency === 'VES') {
+                                                                <div class="text-base font-bold text-gray-900 dark:text-white">{{ formatVES(payment.amount) }}</div>
+                                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                    @if (payment.amountUSD) {
+                                                                        {{ formatUSD(payment.amountUSD) }}
+                                                                    } @else {
+                                                                        {{ formatUSD(payment.amount / (payment.exchangeRate || 240)) }}
+                                                                    }
+                                                                </div>
+                                                            } @else {
+                                                                <div class="text-base font-bold text-gray-900 dark:text-white">{{ formatUSD(payment.amount) }}</div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    } @else {
+                                        <div class="text-center py-12">
+                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <i class="pi pi-money-bill text-2xl text-gray-300 dark:text-gray-600"></i>
+                                            </div>
+                                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 m-0">No hay pagos registrados</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Columna Derecha: Resumen -->
+                            <div>
+                                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm sticky top-6">
+                                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                            <i class="pi pi-dollar text-gray-600 dark:text-gray-400 text-sm"></i>
+                                        </div>
+                                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Resumen de Pago</h3>
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Total de la Orden</span>
+                                            <span class="text-base font-semibold text-gray-900 dark:text-white">{{ formatUSD(order()!.totalAmount) }}</span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Total Pagado</span>
+                                            <span class="text-base font-semibold text-green-600 dark:text-green-400">{{ formatUSD(getTotalPaidUSD()) }}</span>
+                                        </div>
+
+                                        @if (!isOrderFullyPaid()) {
+                                            <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Restante</span>
+                                                <span class="text-base font-semibold text-orange-600 dark:text-orange-400">{{ formatUSD(getRemainingAmount()) }}</span>
+                                            </div>
+                                        }
+
+                                        <div class="flex items-center justify-between pt-2">
+                                            <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Estado</span>
+                                            <p-tag 
+                                                [value]="isOrderFullyPaid() ? 'PAGADO' : 'PENDIENTE'" 
+                                                [severity]="isOrderFullyPaid() ? 'success' : 'warning'"
+                                                styleClass="text-xs">
+                                            </p-tag>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </p-tabPanel>
+
+                <!-- TAB 3: FOTOS -->
+                <p-tabPanel header="Evidencia" leftIcon="pi pi-images" [disabled]="!hasImages()" >
+                    <div class="p-6">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                                    <i class="pi pi-images text-purple-600 dark:text-purple-400 text-sm"></i>
+                                </div>
+                                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide m-0">Evidencia Fotográfica</h3>
+                                @if (order()!.images && order()!.images.length > 0) {
+                                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded ml-auto">{{ order()!.images.length }} {{ order()!.images.length === 1 ? 'imagen' : 'imágenes' }}</span>
+                                }
+                            </div>
+                            
+                            <div *ngIf="hasImages(); else noImages">
+                                <p-galleria 
+                                    [value]="order()!.images" 
+                                    [numVisible]="4" 
+                                    [circular]="true" 
+                                    [showItemNavigators]="true" 
+                                    [showThumbnails]="true" 
+                                    [containerStyle]="{'max-width': '100%'}"
+                                    styleClass="custom-galleria rounded-lg overflow-hidden">
+                                    <ng-template pTemplate="item" let-item>
+                                        <div class="w-full bg-white flex items-center justify-center min-h-[600px] rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                                            <img [src]="getImageUrl(item)" class="w-full h-auto object-contain rounded-lg" style="max-height: 70vh;" (error)="handleImageError($event)"/>
+                                        </div>
+                                    </ng-template>
+                                    <ng-template pTemplate="thumbnail" let-item>
+                                        <div class="w-20 h-16 bg-white dark:bg-gray-800 overflow-hidden rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-purple-500 dark:hover:border-purple-400 transition-colors">
+                                            <img [src]="getImageUrl(item)" class="w-full h-full object-cover" (error)="handleImageError($event)"/>
+                                        </div>
+                                    </ng-template>
+                                </p-galleria>
+                            </div>
+                            <ng-template #noImages>
+                                <div class="text-center py-12">
+                                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="pi pi-camera text-2xl text-gray-300 dark:text-gray-600"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 m-0">No hay evidencia fotográfica disponible</p>
+                                </div>
+                            </ng-template>
+                        </div>
+                    </div>
+                </p-tabPanel>
+            </p-tabView>
+        </div>
+    </div>
+</p-dialog>

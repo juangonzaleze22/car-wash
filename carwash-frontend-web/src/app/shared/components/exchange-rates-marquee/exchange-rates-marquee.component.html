@@ -1,0 +1,43 @@
+@if (rates() && !loading() && !error()) {
+    <div class="exchange-rates-marquee bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white py-2 px-4 overflow-hidden relative">
+        <div class="marquee-content flex items-center gap-8 whitespace-nowrap animate-scroll">
+            <!-- Contenido repetido para efecto continuo -->
+            @for (item of [1, 2, 3]; track item) {
+                <div class="flex items-center gap-8">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-dollar text-lg"></i>
+                        <span class="font-semibold">USD:</span>
+                        <span class="font-bold text-lg">{{ formatNumber(rates()!.data.usd.average) }} Bs.</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/30"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg font-bold">€</span>
+                        <span class="font-semibold">EUR:</span>
+                        <span class="font-bold text-lg">{{ formatNumber(rates()!.data.eur.average) }} Bs.</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/30"></div>
+                    <div class="flex items-center gap-2 text-sm opacity-90">
+                        <i class="pi pi-info-circle"></i>
+                        <span>Fuente: {{ rates()!.data.usd.source }}</span>
+                    </div>
+                    <div class="w-px h-6 bg-white/30"></div>
+                </div>
+            }
+        </div>
+    </div>
+} @else if (loading()) {
+    <div class="exchange-rates-marquee bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-800 dark:to-blue-900 text-white py-2 px-4">
+        <div class="flex items-center justify-center gap-2">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>Cargando tasas de cambio...</span>
+        </div>
+    </div>
+} @else if (error()) {
+    <div class="exchange-rates-marquee bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 text-white py-2 px-4">
+        <div class="flex items-center justify-center gap-2">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>{{ error() }}</span>
+        </div>
+    </div>
+}
+

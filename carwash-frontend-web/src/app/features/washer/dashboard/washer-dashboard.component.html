@@ -1,0 +1,198 @@
+<p-toast></p-toast>
+
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div>
+            <h1 class="dashboard-title">Mi Dashboard</h1>
+            <p class="dashboard-subtitle">Resumen de mis ganancias y actividad</p>
+        </div>
+    </div>
+
+    <!-- Period Filter -->
+    <div class="filter-container">
+        <div class="filter-content">
+            <p-selectButton 
+                [options]="periodOptions"
+                [ngModel]="selectedPeriod()"
+                (ngModelChange)="selectedPeriod.set($event); onPeriodChange()"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="period-select-button">
+            </p-selectButton>
+
+            @if (selectedPeriod() === 'custom') {
+                <div class="custom-dates">
+                    <label class="date-label">Desde:</label>
+                    <p-calendar 
+                        [ngModel]="customStartDate()"
+                        (ngModelChange)="customStartDate.set($event); onCustomDateChange()"
+                        [showIcon]="true"
+                        dateFormat="dd/mm/yy"
+                        [showButtonBar]="true"
+                        styleClass="date-picker">
+                    </p-calendar>
+                    <label class="date-label">Hasta:</label>
+                    <p-calendar 
+                        [ngModel]="customEndDate()"
+                        (ngModelChange)="customEndDate.set($event); onCustomDateChange()"
+                        [showIcon]="true"
+                        dateFormat="dd/mm/yy"
+                        [showButtonBar]="true"
+                        styleClass="date-picker">
+                    </p-calendar>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (loading()) {
+        <!-- Loading Skeletons -->
+        <div class="kpi-grid">
+            @for (item of [1,2,3,4]; track item) {
+                <div class="kpi-card skeleton-card">
+                    <p-skeleton height="90px"></p-skeleton>
+                </div>
+            }
+        </div>
+    } @else if (kpis()) {
+        <!-- KPIs Cards -->
+        <div class="kpi-grid">
+            <!-- Total Ganancias -->
+            <div class="kpi-card kpi-card-blue">
+                <div class="kpi-content">
+                    <div class="kpi-info">
+                        <p class="kpi-label">Ganancias Totales</p>
+                        <p class="kpi-value">${{ kpis()!.totalEarnings | number:'1.2-2' }}</p>
+                        <p class="kpi-meta">{{ kpis()!.totalOrders }} órdenes</p>
+                    </div>
+                    <div class="kpi-icon kpi-icon-blue">
+                        <i class="pi pi-dollar"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ganancias Pendientes -->
+            <div class="kpi-card kpi-card-yellow">
+                <div class="kpi-content">
+                    <div class="kpi-info">
+                        <p class="kpi-label">Pendientes de Pago</p>
+                        <p class="kpi-value">${{ kpis()!.pendingEarnings | number:'1.2-2' }}</p>
+                        <p class="kpi-meta">{{ kpis()!.pendingOrders }} órdenes</p>
+                    </div>
+                    <div class="kpi-icon kpi-icon-yellow">
+                        <i class="pi pi-clock"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ganancias Pagadas -->
+            <div class="kpi-card kpi-card-green">
+                <div class="kpi-content">
+                    <div class="kpi-info">
+                        <p class="kpi-label">Ganancias Pagadas</p>
+                        <p class="kpi-value">${{ kpis()!.paidEarnings | number:'1.2-2' }}</p>
+                        <p class="kpi-meta">{{ kpis()!.paidOrders }} órdenes</p>
+                    </div>
+                    <div class="kpi-icon kpi-icon-green">
+                        <i class="pi pi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ganancias del Período -->
+            <div class="kpi-card kpi-card-purple">
+                <div class="kpi-content">
+                    <div class="kpi-info">
+                        <p class="kpi-label">Período Seleccionado</p>
+                        <p class="kpi-value">${{ kpis()!.monthlyEarnings | number:'1.2-2' }}</p>
+                        <p class="kpi-meta">{{ kpis()!.monthlyOrders }} órdenes</p>
+                    </div>
+                    <div class="kpi-icon kpi-icon-purple">
+                        <i class="pi pi-calendar"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Stats -->
+        <div class="stats-grid">
+            <!-- Ganancias del Día -->
+            <div class="stat-card">
+                <div class="stat-content">
+                    <i class="pi pi-sun stat-icon stat-icon-orange"></i>
+                    <p class="stat-label">Ganancias de Hoy</p>
+                    <p class="stat-value">${{ kpis()!.dailyEarnings | number:'1.2-2' }}</p>
+                    <p class="stat-meta">{{ kpis()!.dailyOrders }} órdenes completadas</p>
+                </div>
+            </div>
+
+            <!-- Promedio por Orden -->
+            <div class="stat-card">
+                <div class="stat-content">
+                    <i class="pi pi-chart-line stat-icon stat-icon-blue"></i>
+                    <p class="stat-label">Promedio por Orden</p>
+                    <p class="stat-value">${{ kpis()!.avgEarningsPerOrder | number:'1.2-2' }}</p>
+                    <p class="stat-meta">Por orden completada</p>
+                </div>
+            </div>
+
+            <!-- Órdenes Completadas -->
+            <div class="stat-card">
+                <div class="stat-content">
+                    <i class="pi pi-check stat-icon stat-icon-green"></i>
+                    <p class="stat-label">Órdenes Completadas</p>
+                    <p class="stat-value">{{ kpis()!.completedOrders }}</p>
+                    <p class="stat-meta">Total de órdenes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-container">
+            <p-tabView>
+                <p-tabPanel header="Gráfica de Ganancias">
+                    @if (chartLoading()) {
+                        <div class="chart-skeleton">
+                            <p-skeleton height="350px" width="100%"></p-skeleton>
+                        </div>
+                    } @else if (chartData()) {
+                        <div class="chart-wrapper">
+                            <apx-chart
+                                [chart]="earningsChartOptions.chart!"
+                                [series]="earningsChartOptions.series!"
+                                [xaxis]="earningsChartOptions.xaxis!"
+                                [yaxis]="earningsChartOptions.yaxis!"
+                                [dataLabels]="earningsChartOptions.dataLabels!"
+                                [grid]="earningsChartOptions.grid!"
+                                [stroke]="earningsChartOptions.stroke!"
+                                [legend]="earningsChartOptions.legend!"
+                                [tooltip]="earningsChartOptions.tooltip!"
+                                [colors]="earningsChartOptions.colors || []">
+                            </apx-chart>
+                        </div>
+                    }
+                </p-tabPanel>
+                <p-tabPanel header="Gráfica de Órdenes">
+                    @if (chartLoading()) {
+                        <div class="chart-skeleton">
+                            <p-skeleton height="350px" width="100%"></p-skeleton>
+                        </div>
+                    } @else if (chartData()) {
+                        <div class="chart-wrapper">
+                            <apx-chart
+                                [chart]="ordersChartOptions.chart!"
+                                [series]="ordersChartOptions.series!"
+                                [xaxis]="ordersChartOptions.xaxis!"
+                                [yaxis]="ordersChartOptions.yaxis!"
+                                [dataLabels]="ordersChartOptions.dataLabels!"
+                                [grid]="ordersChartOptions.grid!"
+                                [colors]="ordersChartOptions.colors || []">
+                            </apx-chart>
+                        </div>
+                    }
+                </p-tabPanel>
+            </p-tabView>
+        </div>
+    }
+</div>

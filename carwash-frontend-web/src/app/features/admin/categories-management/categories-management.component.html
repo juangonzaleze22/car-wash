@@ -1,0 +1,201 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Categorías de Vehículos</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Configura los tipos de vehículos que atiende el carwash</p>
+        </div>
+        <p-button 
+            label="Nueva Categoría" 
+            icon="pi pi-plus"
+            (onClick)="openNew()"
+            styleClass="font-semibold shadow-md">
+        </p-button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-tags"></i>
+                LISTA DE CATEGORÍAS
+            </h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                {{ categories().length }} categorías
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table
+                [value]="categories()"
+                [loading]="loading()"
+                [paginator]="false"
+                styleClass="p-datatable-striped p-datatable-sm"
+                [tableStyle]="{'min-width': '50rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 w-[25%]">Nombre</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Código</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Descripción</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Estado</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Servicios</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-category>
+                    <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ category.name }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-mono text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                {{ category.code }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @if (category.description) {
+                                <span class="text-sm text-gray-600 dark:text-gray-400">{{ category.description }}</span>
+                            } @else {
+                                <span class="text-xs text-gray-300 dark:text-gray-600 italic">Sin descripción</span>
+                            }
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <p-tag 
+                                [value]="category.active ? 'ACTIVA' : 'INACTIVA'" 
+                                [severity]="category.active ? 'success' : 'danger'"
+                                styleClass="text-[10px] font-bold">
+                            </p-tag>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="font-bold text-sm text-blue-600 dark:text-blue-400">{{ category.servicesPerformed || 0 }}</span>
+                                <span class="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Realizados</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                <p-button
+                                    icon="pi pi-pencil"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    severity="info"
+                                    size="small"
+                                    pTooltip="Editar"
+                                    (onClick)="editCategory(category)">
+                                </p-button>
+                                <p-button
+                                    icon="pi pi-trash"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    severity="danger"
+                                    size="small"
+                                    pTooltip="Eliminar"
+                                    [disabled]="(category._count?.vehicles || 0) > 0 || (category._count?.services || 0) > 0"
+                                    (onClick)="deleteCategory(category)">
+                                </p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="6" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-tags text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No hay categorías registradas</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Dialog -->
+<p-dialog
+    [(visible)]="displayDialog"
+    [header]="isEditMode() ? 'Editar Categoría' : 'Nueva Categoría'"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+    [closable]="true"
+    styleClass="rounded-xl"
+    (onHide)="displayDialog.set(false)">
+    
+    <div class="flex flex-col gap-4 pt-2">
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Nombre de la Categoría <span class="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                pInputText
+                [ngModel]="formData().name"
+                (ngModelChange)="updateFormName($event)"
+                placeholder="Ej: Auto, Moto, Camioneta"
+                class="w-full" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Código Único <span class="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                pInputText
+                [ngModel]="formData().code"
+                (ngModelChange)="updateFormCode($event)"
+                placeholder="Ej: AUTO, MOTO"
+                class="w-full uppercase font-mono" />
+            <small class="block text-xs text-gray-500 dark:text-gray-400 mt-1">Usado internamente para identificar el tipo de vehículo</small>
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Descripción (Opcional)
+            </label>
+            <textarea
+                pInputTextarea
+                [ngModel]="formData().description"
+                (ngModelChange)="updateFormDescription($event)"
+                placeholder="Descripción breve..."
+                [rows]="3"
+                class="w-full"
+                [autoResize]="true">
+            </textarea>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <p-checkbox
+                [binary]="true"
+                [ngModel]="formData().active"
+                (onChange)="updateFormActive($any($event).checked)"
+                inputId="active">
+            </p-checkbox>
+            <label for="active" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Categoría activa y disponible
+            </label>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-4">
+            <p-button
+                label="Cancelar"
+                icon="pi pi-times"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="displayDialog.set(false)">
+            </p-button>
+            <p-button
+                [label]="isEditMode() ? 'Guardar Cambios' : 'Crear Categoría'"
+                icon="pi pi-check"
+                (onClick)="saveCategory()"
+                styleClass="font-semibold">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

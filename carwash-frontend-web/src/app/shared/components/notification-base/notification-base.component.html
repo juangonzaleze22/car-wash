@@ -1,0 +1,60 @@
+<div class="relative">
+  <button pButton pRipple type="button" icon="pi pi-bell"
+    class="p-button-rounded p-button-text p-button-secondary relative overflow-visible" (click)="op.toggle($event)">
+    @if (notificationService.unreadCount() > 0) {
+    <p-badge [value]="notificationService.unreadCount().toString()" severity="danger"
+      styleClass="absolute -top-1 -right-1"></p-badge>
+    }
+  </button>
+
+  <p-overlayPanel #op [style]="{width: '350px', maxWidth: '90vw'}" styleClass="notification-panel" [dismissable]="true">
+    <div class="flex flex-col bg-white dark:bg-gray-800" style="height: 400px; max-height: 80vh; overflow: hidden;">
+      <div
+        class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+        <span class="font-bold text-lg text-gray-800 dark:text-gray-200">Notificaciones</span>
+        @if (notificationService.unreadCount() > 0) {
+        <button pButton label="Marcar todo leído"
+          class="p-button-text p-button-sm text-xs whitespace-nowrap text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
+          (click)="notificationService.clearAll()">
+        </button>
+        }
+      </div>
+
+      <p-scrollPanel [style]="{width: '100%', height: '340px'}" styleClass="notification-scroll-panel">
+        <div class="flex flex-col min-w-0">
+          @if (notificationService.notifications().length === 0) {
+          <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+            No tienes notificaciones nuevas
+          </div>
+          }
+          @for (item of notificationService.notifications(); track item.id) {
+          <div
+            class="p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer min-w-0"
+            [ngClass]="{
+                    'bg-blue-50 dark:bg-blue-900/20': !item.read
+                  }" (click)="onNotificationClick(item, op)">
+            <div class="flex items-start gap-3 min-w-0">
+              <div class="mt-1 flex-shrink-0">
+                <i class="pi" [ngClass]="{
+                    'pi-info-circle text-blue-500 dark:text-blue-400': item.type === 'INFO',
+                    'pi-check-circle text-green-500 dark:text-green-400': item.type === 'SUCCESS',
+                    'pi-exclamation-triangle text-yellow-500 dark:text-yellow-400': item.type === 'WARNING',
+                    'pi-times-circle text-red-500 dark:text-red-400': item.type === 'ERROR'
+                  }"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mb-1 break-words mt-0">{{ item.message }}
+                </p>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ item.createdAt | date:'short' }}</span>
+              </div>
+              @if (!item.read) {
+              <div class="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-2 flex-shrink-0"></div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+      </p-scrollPanel>
+    </div>
+  </p-overlayPanel>
+</div>

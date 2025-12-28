@@ -1,0 +1,64 @@
+<p-toast></p-toast>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Mis Vehículos</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Gestiona tus vehículos registrados</p>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <!-- Loading Skeletons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (item of [1,2,3]; track item) {
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 h-40">
+                    <p-skeleton width="40%" height="1.5rem" styleClass="mb-2"></p-skeleton>
+                    <p-skeleton width="80%" height="3rem"></p-skeleton>
+                </div>
+            }
+        </div>
+    } @else {
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="pi pi-car text-blue-500"></i>
+                    Mis Vehículos
+                </h3>
+            </div>
+            <div class="p-4">
+                @if (dashboard()!.vehicles.length === 0) {
+                    <div class="text-center py-12">
+                        <i class="pi pi-car text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No tienes vehículos registrados</p>
+                    </div>
+                } @else {
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @for (vehicle of dashboard()!.vehicles; track vehicle.id) {
+                            <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-all bg-gray-50 dark:bg-gray-700/50">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">{{ vehicle.plate }}</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ vehicle.categoryRef?.name || vehicle.category }}</p>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                        <i class="pi pi-car text-xl"></i>
+                                    </div>
+                                </div>
+                                @if (vehicle.notes) {
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ vehicle.notes }}</p>
+                                }
+                                <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total de lavados:</span>
+                                    <span class="font-bold text-gray-800 dark:text-white">{{ vehicle.totalOrders }}</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+

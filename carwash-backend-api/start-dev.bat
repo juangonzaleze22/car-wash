@@ -1,0 +1,3 @@
+@echo off
+echo Starting development server...
+node node_modules\ts-node\dist\bin.js src/index.ts

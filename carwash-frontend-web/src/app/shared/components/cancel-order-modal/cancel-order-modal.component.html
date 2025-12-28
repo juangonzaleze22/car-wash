@@ -1,0 +1,97 @@
+<p-dialog 
+    [header]="order()?.status === 'CANCELLED' && order()?.cancellationReason ? 'Motivo de Cancelación' : 'Cancelar Orden'" 
+    [visible]="visible()"
+    (visibleChange)="onVisibleChange($event)"
+    [modal]="true" 
+    [style]="{width: '600px', maxWidth: '90vw'}"
+    [closable]="true"
+    styleClass="cancel-order-dialog">
+    
+    <div class="flex flex-col gap-5 py-2">
+        @if (order()?.status === 'CANCELLED' && order()?.cancellationReason) {
+            <!-- View Mode: Show cancellation reason -->
+            <div class="bg-gradient-to-br from-red-50 to-red-100/50 border-2 border-red-200 rounded-xl p-5 shadow-sm">
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                        <i class="pi pi-exclamation-triangle text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-base font-bold text-red-900 mb-1">Orden Cancelada</p>
+                        <p class="text-sm text-red-700 font-medium">
+                            Orden #{{ order()?.id }} - {{ order()?.vehicle?.plate }}
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-red-900 mb-3 uppercase tracking-wide">Motivo de cancelación:</label>
+                    <div class="bg-white border-2 border-red-200 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap min-h-[120px] max-h-[300px] overflow-y-auto shadow-inner">
+                        {{ order()?.cancellationReason }}
+                    </div>
+                </div>
+            </div>
+        } @else {
+            <!-- Edit Mode: Cancel order -->
+            <div class="bg-gradient-to-br from-amber-50 to-yellow-100/50 border-2 border-amber-200 rounded-xl p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
+                        <i class="pi pi-exclamation-triangle text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-base font-bold text-amber-900 mb-2">¿Estás seguro de cancelar esta orden?</p>
+                        <div class="flex items-center gap-2 text-sm text-amber-800 bg-white/60 rounded-lg px-3 py-1.5 inline-block">
+                            <i class="pi pi-file text-xs"></i>
+                            <span class="font-semibold">Orden #{{ order()?.id }}</span>
+                            <span class="text-amber-600">•</span>
+                            <i class="pi pi-car text-xs"></i>
+                            <span class="font-semibold">{{ order()?.vehicle?.plate }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-800 mb-2">
+                    Motivo de cancelación 
+                    <span class="text-red-500 font-bold">*</span>
+                </label>
+                <textarea 
+                    pInputTextarea 
+                    [ngModel]="cancellationReason()"
+                    (ngModelChange)="cancellationReason.set($event)"
+                    rows="30"
+                    placeholder="Describe detalladamente el motivo por el cual se cancela esta orden..."
+                    class="w-full resize-none"
+                    styleClass="cancel-textarea">
+                </textarea>
+                <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                    <i class="pi pi-info-circle"></i>
+                    <span>Este motivo será visible en el historial de la orden y no podrá ser modificado posteriormente.</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-200">
+            <p-button 
+                label="Cerrar" 
+                icon="pi pi-times" 
+                (onClick)="onVisibleChange(false)"
+                severity="secondary"
+                [outlined]="true"
+                styleClass="px-4">
+            </p-button>
+            @if (!(order()?.status === 'CANCELLED' && order()?.cancellationReason)) {
+                <p-button 
+                    label="Confirmar Cancelación" 
+                    icon="pi pi-times-circle" 
+                    (onClick)="confirmCancel()"
+                    [disabled]="!canConfirm()"
+                    severity="danger"
+                    styleClass="px-5 font-semibold">
+                </p-button>
+            }
+        </div>
+    </ng-template>
+</p-dialog>
+

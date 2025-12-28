@@ -1,0 +1,51 @@
+<div class="flex justify-center items-center min-h-screen bg-blue-50 dark:bg-gray-900">
+    <p-toast></p-toast>
+    <p-card header="CarWash Pro" subheader="Área de Clientes" [style]="{ width: '400px' }" styleClass="shadow-lg">
+        <ng-template pTemplate="header">
+            <div class="h-16 bg-blue-600 flex items-center justify-center rounded-t-xl">
+                <i class="pi pi-car text-4xl text-white"></i>
+            </div>
+        </ng-template>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4 mt-3">
+            <div class="flex flex-col gap-2">
+                <label htmlFor="phone" class="font-bold text-gray-700 dark:text-gray-300">Teléfono</label>
+                <p-inputMask 
+                    id="phone" 
+                    formControlName="phone" 
+                    mask="(9999) 999 9999"
+                    placeholder="(0412) 123 4567"
+                    styleClass="w-full"
+                    inputStyleClass="w-full">
+                </p-inputMask>
+                <small class="text-xs text-gray-500 dark:text-gray-400">
+                    Ingrese su número de teléfono registrado
+                </small>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label htmlFor="password" class="font-bold text-gray-700 dark:text-gray-300">Contraseña</label>
+                <p-password 
+                    id="password" 
+                    formControlName="password" 
+                    [feedback]="false" 
+                    [toggleMask]="true"
+                    styleClass="w-full" 
+                    inputStyleClass="w-full" 
+                    placeholder="Ingrese su contraseña">
+                </p-password>
+                <small class="text-xs text-gray-500 dark:text-gray-400">
+                    Contraseña por defecto: <strong>cliente123</strong>
+                </small>
+            </div>
+
+            <p-button 
+                label="Ingresar" 
+                type="submit" 
+                [loading]="loading" 
+                styleClass="w-full">
+            </p-button>
+        </form>
+    </p-card>
+</div>
+

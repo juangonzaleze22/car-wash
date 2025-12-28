@@ -1,0 +1,287 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Servicios</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Configura el catálogo de servicios y precios</p>
+        </div>
+        <p-button 
+            label="Nuevo Servicio" 
+            icon="pi pi-plus"
+            (onClick)="openNew()"
+            styleClass="font-semibold shadow-md">
+        </p-button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 p-4">
+        <div class="flex items-center gap-4">
+            <div class="w-full md:w-1/3">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por categoría</label>
+                <div class="flex gap-2">
+                    <p-dropdown 
+                        [options]="getFilterOptions()"
+                        [ngModel]="selectedCategoryFilter()"
+                        (onChange)="onCategoryFilterChange($event.value)"
+                        optionLabel="label"
+                        optionValue="value"
+                        styleClass="w-full"
+                        placeholder="Seleccione una categoría">
+                    </p-dropdown>
+                    @if (selectedCategoryFilter()) {
+                        <p-button 
+                            icon="pi pi-times" 
+                            [text]="true"
+                            severity="secondary"
+                            pTooltip="Limpiar filtro"
+                            (onClick)="onCategoryFilterChange(null)">
+                        </p-button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-list"></i>
+                CATÁLOGO DE SERVICIOS
+            </h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
+                {{ filteredServices().length }} servicio{{ filteredServices().length !== 1 ? 's' : '' }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table 
+                [value]="filteredServices()" 
+                [loading]="loading()"
+                [paginator]="false"
+                styleClass="p-datatable-striped p-datatable-sm"
+                [tableStyle]="{'min-width': '50rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 w-[25%]">Nombre</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 w-[15%]">Descripción</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Categoría</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Precio</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Comisión %</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Comisión $</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Estado</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-service>
+                    <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ service.name }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @if (service.description) {
+                                <span class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{{ service.description }}</span>
+                            } @else {
+                                <span class="text-xs text-gray-400 dark:text-gray-600 italic">Sin descripción</span>
+                            }
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag [value]="getCategoryLabel(service)" severity="info" styleClass="text-xs font-bold uppercase"></p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">${{ service.price | number:'1.2-2' }}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded font-mono">{{ service.commissionPercentage }}%</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-green-600 dark:text-green-400">
+                                ${{ calculateCommission(service.price, service.commissionPercentage) | number:'1.2-2' }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <p-tag 
+                                [value]="service.active ? 'ACTIVO' : 'INACTIVO'" 
+                                [severity]="service.active ? 'success' : 'danger'"
+                                styleClass="text-[10px] font-bold">
+                            </p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                <p-button 
+                                    icon="pi pi-pencil" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="info"
+                                    size="small"
+                                    pTooltip="Editar"
+                                    tooltipPosition="left"
+                                    (onClick)="editService(service)"></p-button>
+                                <p-button 
+                                    [icon]="service.active ? 'pi pi-eye-slash' : 'pi pi-eye'" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    [severity]="service.active ? 'warning' : 'success'"
+                                    size="small"
+                                    [pTooltip]="service.active ? 'Desactivar' : 'Activar'"
+                                    tooltipPosition="left"
+                                    (onClick)="toggleActive(service)"></p-button>
+                                <p-button 
+                                    icon="pi pi-trash" 
+                                    [rounded]="true" 
+                                    [text]="true"
+                                    severity="danger"
+                                    size="small"
+                                    pTooltip="Eliminar"
+                                    tooltipPosition="left"
+                                    (onClick)="deleteService(service)"></p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="8" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No hay servicios registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Service Dialog -->
+<p-dialog 
+    [header]="isEditMode() ? 'Editar Servicio' : 'Nuevo Servicio'"
+    [visible]="displayDialog()"
+    (visibleChange)="displayDialog.set($event)"
+    [modal]="true"
+    [style]="{width: '500px'}"
+    [closable]="true"
+    styleClass="rounded-xl">
+    
+    <div class="flex flex-col gap-5 pt-2">
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Nombre del Servicio <span class="text-red-500">*</span>
+            </label>
+            <input 
+                pInputText 
+                [ngModel]="formData().name"
+                (ngModelChange)="updateFormName($event)"
+                placeholder="Ej: Lavado Simple (Auto)"
+                class="w-full" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Descripción <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(Opcional)</span>
+            </label>
+            <textarea 
+                pInputTextarea 
+                [ngModel]="formData().description"
+                (ngModelChange)="updateFormDescription($event)"
+                rows="3"
+                placeholder="Descripción detallada del servicio..."
+                class="w-full"></textarea>
+        </div>
+
+        <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                Categoría de Vehículo <span class="text-red-500">*</span>
+            </label>
+            <p-dropdown 
+                [options]="vehicleCategories()"
+                [ngModel]="formData().categoryTargetId"
+                (onChange)="updateFormCategory($event.value)"
+                optionLabel="label"
+                optionValue="id"
+                styleClass="w-full"
+                placeholder="Seleccione una categoría">
+            </p-dropdown>
+            <small class="text-xs text-gray-500 dark:text-gray-400 mt-1 block">
+                Seleccione "Todos" para servicios que aplican a todos los tipos de vehículos
+            </small>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Precio (USD) <span class="text-red-500">*</span>
+                </label>
+                <p-inputNumber 
+                    [ngModel]="formData().price"
+                    (onInput)="updateFormPrice($event.value)"
+                    mode="decimal"
+                    [min]="0"
+                    [maxFractionDigits]="2"
+                    [minFractionDigits]="2"
+                    prefix="$"
+                    styleClass="w-full"
+                    placeholder="0.00">
+                </p-inputNumber>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Comisión (%) <span class="text-red-500">*</span>
+                </label>
+                <p-inputNumber 
+                    [ngModel]="formData().commissionPercentage"
+                    (onInput)="updateFormCommission($any($event).value)"
+                    [min]="0"
+                    [max]="100"
+                    suffix="%"
+                    styleClass="w-full"
+                    placeholder="0-100">
+                </p-inputNumber>
+            </div>
+        </div>
+
+        @if (formData().price > 0 && formData().commissionPercentage > 0) {
+            <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex justify-between items-center">
+                <span class="text-sm text-green-800 dark:text-green-300">Pago estimado al lavador:</span>
+                <span class="font-bold text-green-700 dark:text-green-400 text-lg">
+                    ${{ calculateCommission(formData().price, formData().commissionPercentage) | number:'1.2-2' }}
+                </span>
+            </div>
+        }
+
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <p-checkbox 
+                [binary]="true" 
+                inputId="active"
+                [ngModel]="formData().active"
+                (onChange)="updateFormActive($any($event).checked)">
+            </p-checkbox>
+            <label for="active" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Servicio activo y disponible
+            </label>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-4">
+            <p-button 
+                label="Cancelar" 
+                icon="pi pi-times" 
+                (onClick)="displayDialog.set(false)"
+                severity="secondary"
+                [outlined]="true">
+            </p-button>
+            <p-button 
+                [label]="isEditMode() ? 'Guardar Cambios' : 'Crear Servicio'" 
+                icon="pi pi-check" 
+                (onClick)="saveService()"
+                styleClass="font-semibold">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

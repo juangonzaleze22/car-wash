@@ -1,0 +1,102 @@
+/* Estilos para la tabla de inventario en dark mode */
+
+/* Header de la tabla */
+:host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+    background-color: rgb(243, 244, 246) !important; /* gray-100 */
+    border-color: rgb(229, 231, 235) !important; /* gray-200 */
+    color: rgb(55, 65, 81) !important; /* gray-700 */
+}
+
+:host ::ng-deep .dark .p-datatable .p-datatable-thead > tr > th,
+:host ::ng-deep .dark.p-datatable .p-datatable-thead > tr > th,
+.dark :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+    background-color: rgb(55, 65, 81) !important; /* gray-700 */
+    border-color: rgb(55, 65, 81) !important; /* gray-700 */
+    color: rgb(209, 213, 219) !important; /* gray-300 */
+}
+
+/* Filas de la tabla */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr {
+    background-color: transparent !important;
+}
+
+:host ::ng-deep .dark .p-datatable .p-datatable-tbody > tr {
+    background-color: rgb(17, 24, 39) !important; /* gray-900 */
+}
+
+:host ::ng-deep .dark .p-datatable-striped .p-datatable-tbody > tr:nth-child(even) {
+    background-color: rgb(31, 41, 55) !important; /* gray-800 */
+}
+
+/* Bordes de las celdas - desactivar bordes individuales para usar border-b en tr */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+    border-color: transparent !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+:host ::ng-deep .dark .p-datatable .p-datatable-tbody > tr > td {
+    border-color: transparent !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+}
+
+/* Bordes de las filas - usar border-b en el tr */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr {
+    border-bottom: 1px solid rgb(243, 244, 246) !important; /* gray-100 */
+}
+
+:host ::ng-deep .dark .p-datatable .p-datatable-tbody > tr {
+    border-bottom: 1px solid rgb(55, 65, 81) !important; /* gray-700 */
+}
+
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:last-child {
+    border-bottom: none !important;
+}
+
+:host ::ng-deep .dark .p-datatable .p-datatable-tbody > tr:last-child {
+    border-bottom: none !important;
+}
+
+/* Estilos de hover para las filas - light mode */
+:host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+    background-color: rgb(239, 246, 255) !important; /* blue-50 */
+}
+
+/* Estilos de hover para las filas - dark mode */
+:host ::ng-deep .dark .p-datatable .p-datatable-tbody > tr:hover,
+:host ::ng-deep .dark.p-datatable .p-datatable-tbody > tr:hover,
+.dark :host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
+    background-color: rgba(30, 58, 138, 0.1) !important; /* blue-900/10 */
+}
+
+/* Asegurar que el hover funcione incluso con striped */
+:host ::ng-deep .dark .p-datatable-striped .p-datatable-tbody > tr:hover {
+    background-color: rgba(30, 58, 138, 0.1) !important; /* blue-900/10 */
+}
+
+:host ::ng-deep .dark .p-datatable-striped .p-datatable-tbody > tr:nth-child(even):hover {
+    background-color: rgba(30, 58, 138, 0.15) !important; /* blue-900/15 para filas pares */
+}
+
+/* Input number en dark mode */
+:host ::ng-deep .dark .p-inputnumber-input {
+    background-color: rgb(31, 41, 55) !important; /* gray-800 */
+    border-color: rgb(55, 65, 81) !important; /* gray-700 */
+    color: rgb(209, 213, 219) !important; /* gray-300 */
+}
+
+:host ::ng-deep .dark .p-inputnumber-button {
+    background-color: rgb(31, 41, 55) !important; /* gray-800 */
+    border-color: rgb(55, 65, 81) !important; /* gray-700 */
+    color: rgb(209, 213, 219) !important; /* gray-300 */
+}
+
+:host ::ng-deep .dark .p-inputnumber-button:hover {
+    background-color: rgb(55, 65, 81) !important; /* gray-700 */
+}
+

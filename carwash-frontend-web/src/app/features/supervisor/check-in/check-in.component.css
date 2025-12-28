@@ -1,0 +1,83 @@
+/* Estilos específicos para el componente Check-In */
+
+/* Forzar mayúsculas en el input de placa */
+::ng-deep .uppercase-input input {
+    text-transform: uppercase;
+}
+
+/* Asegurar que todos los inputs tengan el mismo ancho */
+::ng-deep .p-autocomplete,
+::ng-deep .p-inputmask,
+::ng-deep .p-dropdown {
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+::ng-deep .p-autocomplete .p-inputtext,
+::ng-deep .p-autocomplete input,
+::ng-deep .p-inputmask input,
+::ng-deep .p-dropdown .p-dropdown-label {
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ajustes para paneles de PrimeNG - evitar que se corten */
+::ng-deep .p-autocomplete-panel {
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1100 !important;
+    position: fixed !important; /* Cambiar a fixed para evitar cortes */
+}
+
+/* Asegurar que el panel del dropdown tenga el mismo ancho que el input */
+::ng-deep .p-dropdown {
+    width: 100% !important;
+    max-width: 100%;
+    position: relative;
+}
+
+/* Asegurar que el trigger del dropdown tenga el mismo espaciado que los inputs */
+::ng-deep .p-dropdown .p-dropdown-trigger {
+    width: auto;
+    flex-shrink: 0;
+    padding-right: 0.75rem !important; /* Mismo padding derecho que los inputs de PrimeNG */
+    padding-left: 0.5rem !important; /* Separar del contenido del label */
+    margin-right: 0 !important; /* Eliminar cualquier margen */
+}
+
+/* Asegurar que el label tenga el mismo padding que los inputs */
+::ng-deep .p-dropdown .p-dropdown-label {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding-right: 0.5rem !important; /* Agregar padding derecho al label para separar del trigger */
+}
+
+::ng-deep .p-dropdown-panel {
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1100 !important;
+    position: absolute !important; /* Usar absolute para que herede el ancho del input */
+    width: 100% !important; /* Mismo ancho que el input */
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Asegurar que el contenedor del autocomplete no tenga overflow hidden que corte el panel */
+::ng-deep .p-autocomplete {
+    position: relative;
+}
+
+/* Ajustes de fuente para botones PrimeNG */
+::ng-deep .p-button {
+    font-weight: 600;
+}
+
+/* Host display */
+:host {
+    display: block;
+    width: 100%;
+}

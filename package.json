@@ -1,0 +1,15 @@
+{
+  "name": "app-car-wash",
+  "version": "1.0.0",
+  "description": "Aplicación Car Wash - Frontend y Backend",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd carwash-backend-api && npm run dev",
+    "start:frontend": "cd carwash-frontend-web && npm start",
+    "install:all": "npm install && cd carwash-backend-api && npm install && cd ../carwash-frontend-web && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+

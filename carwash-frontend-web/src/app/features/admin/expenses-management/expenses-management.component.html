@@ -1,0 +1,394 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<!-- Floating Action Button -->
+<div class="fab-button-wrapper" pTooltip="Nuevo Gasto" tooltipPosition="left">
+    <button (click)="openNew()" class="fab-button" aria-label="Crear nuevo gasto">
+        <i class="pi pi-plus text-2xl"></i>
+    </button>
+</div>
+
+<div class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Gastos</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Registra y administra los gastos de la empresa</p>
+        </div>
+        <p-button label="Nuevo Gasto" icon="pi pi-plus" (onClick)="openNew()" styleClass="font-semibold">
+        </p-button>
+    </div>
+
+    <!-- Pending Recurring Expenses Alert -->
+    @if (pendingRecurringExpenses().length > 0) {
+    <div class="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="pi pi-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                <div>
+                    <h3 class="font-semibold text-yellow-900 dark:text-yellow-300">Gastos Recurrentes Pendientes</h3>
+                    <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                        Tienes {{ pendingRecurringExpenses().length }} gasto(s) recurrente(s) que deben generarse
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            @for (expense of pendingRecurringExpenses(); track expense.id) {
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-yellow-200 dark:border-yellow-700 flex items-center gap-3">
+                <div>
+                    <p class="font-semibold text-sm text-gray-900 dark:text-gray-200">{{ expense.description }}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                        Próxima fecha: {{ expense.nextDueDate | date:'dd/MM/yyyy' }}
+                    </p>
+                </div>
+                <p-button label="Generar" icon="pi pi-plus" size="small"
+                    (onClick)="generateNextRecurringExpense(expense)">
+                </p-button>
+            </div>
+            }
+        </div>
+    </div>
+    }
+
+    <!-- Recurring Expenses Summary Card -->
+    <div
+        class="mb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-800 shadow-sm p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                    <i class="pi pi-sync text-purple-600 dark:text-purple-400 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Gastos Recurrentes</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Total de gastos recurrentes registrados</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">${{ recurringExpensesTotal() |
+                    number:'1.2-2' }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ recurringExpensesCount() }} gasto(s)
+                    recurrente(s)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoría</label>
+                <p-dropdown [options]="categoryFilterOptions" [ngModel]="selectedCategory()"
+                    (onChange)="selectedCategory.set($event.value); onCategoryFilterChange()" optionLabel="label"
+                    optionValue="value" styleClass="w-full" placeholder="Filtrar por categoría">
+                </p-dropdown>
+            </div>
+            <!--  <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rango de Fechas</label>
+                <p-calendar 
+                    [(ngModel)]="dateRange"
+                    selectionMode="range"
+                    [readonlyInput]="true"
+                    dateFormat="dd/mm/yy"
+                    (onSelect)="onDateRangeChange()"
+                    styleClass="w-full"
+                    placeholder="Seleccionar rango">
+                </p-calendar>
+            </div> -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Gasto</label>
+                <p-dropdown [options]="[
+                        { label: 'Todos', value: undefined },
+                        { label: 'Solo Recurrentes', value: true },
+                        { label: 'Solo No Recurrentes', value: false }
+                    ]" [ngModel]="showOnlyRecurring()"
+                    (onChange)="showOnlyRecurring.set($event.value); onRecurringFilterChange()" optionLabel="label"
+                    optionValue="value" styleClass="w-full" placeholder="Filtrar por tipo">
+                </p-dropdown>
+            </div>
+            <div class="flex items-end">
+                <p-button label="Limpiar Filtros" icon="pi pi-filter-slash" severity="secondary" [outlined]="true"
+                    (onClick)="clearFilters()" styleClass="w-full">
+                </p-button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expenses Table -->
+    <div
+        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50">
+            <h3
+                class="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-2">
+                <i class="pi pi-list"></i>
+                LISTA DE GASTOS
+            </h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <p-table [value]="expenses()" [loading]="loading()" [paginator]="true" [rows]="limit()"
+                [totalRecords]="totalRecords()" [lazy]="true" (onLazyLoad)="onPageChange($event)"
+                styleClass="p-datatable-striped p-datatable-sm" [tableStyle]="{'min-width': '50rem'}">
+                <ng-template pTemplate="header">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Descripción
+                        </th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Categoría
+                        </th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Monto</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Moneda</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Monto USD
+                        </th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Recurrencia
+                        </th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Fecha</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4">Registrado
+                            por</th>
+                        <th class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase py-3 px-4 text-center">
+                            Acciones</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-expense>
+                    <tr
+                        class="hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ expense.description
+                                }}</span>
+                            @if (expense.notes) {
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ expense.notes }}</p>
+                            }
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag [value]="getCategoryLabel(expense.category)" severity="warning"
+                                styleClass="text-xs"></p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100">
+                                {{ formatCurrency(expense.amount, expense.currency || 'USD') }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <p-tag [value]="expense.currency || 'USD'"
+                                [severity]="(expense.currency || 'USD') === 'USD' ? 'success' : 'info'"
+                                styleClass="text-xs"></p-tag>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="font-semibold text-sm text-red-600 dark:text-red-400">
+                                ${{ expense.amountUSD | number:'1.2-2' }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @if (expense.isRecurring) {
+                            <div class="flex flex-col gap-1">
+                                <p-tag [value]="getRecurrenceLabel(expense.recurrenceFrequency)" severity="info"
+                                    styleClass="text-xs"></p-tag>
+                                @if (expense.nextDueDate) {
+                                <span class="text-xs"
+                                    [ngClass]="isDueTodayOrPast(expense.nextDueDate) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-600 dark:text-gray-400'">
+                                    Próximo: {{ expense.nextDueDate | date:'dd/MM/yyyy' }}
+                                </span>
+                                }
+                            </div>
+                            } @else {
+                            <span class="text-xs text-gray-400 dark:text-gray-500">-</span>
+                            }
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">
+                                {{ expense.createdAt | date:"d 'de' MMM, h:mm a" }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ expense.createdBy?.username || 'N/A' }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-1 justify-center">
+                                @if (expense.isRecurring && isDueTodayOrPast(expense.nextDueDate)) {
+                                <p-button icon="pi pi-refresh" [rounded]="true" [text]="true" severity="success"
+                                    size="small" pTooltip="Generar siguiente gasto"
+                                    (onClick)="generateNextRecurringExpense(expense)"></p-button>
+                                }
+                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info"
+                                    size="small" pTooltip="Editar" (onClick)="editExpense(expense)"></p-button>
+                                <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                                    size="small" pTooltip="Eliminar" (onClick)="deleteExpense(expense)"></p-button>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="9" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-2">
+                                <i class="pi pi-inbox text-4xl text-gray-300 dark:text-gray-600"></i>
+                                <span class="text-gray-500 dark:text-gray-400 font-medium">No hay gastos
+                                    registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+</div>
+
+<!-- Expense Dialog -->
+<p-dialog [header]="isEditMode() ? 'Editar Gasto' : 'Nuevo Gasto'" [visible]="displayDialog()"
+    (visibleChange)="displayDialog.set($event)" [modal]="true" [style]="{width: '500px'}" [closable]="true"
+    styleClass="rounded-xl">
+
+    <div class="flex flex-col gap-4 pt-2">
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Categoría <span class="text-red-500">*</span>
+            </label>
+            <p-dropdown [options]="expenseCategories" [ngModel]="formData().category"
+                (onChange)="updateFormCategory($event.value)" optionLabel="label" optionValue="value"
+                styleClass="w-full" placeholder="Seleccione una categoría">
+            </p-dropdown>
+        </div>
+
+        <!-- PRODUCT SELECTION SECTION (Solo visible si Categoría es PRODUCTS) -->
+        @if (formData().category === 'PRODUCTS' && !isEditMode()) {
+        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h4 class="font-bold text-blue-800 dark:text-blue-300 text-sm mb-2">Detalle de Compra (Inventario)</h4>
+
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Producto</label>
+                    <p-dropdown [options]="products()" [ngModel]="selectedProductId() || null"
+                        (onChange)="updateSelectedProduct($event.value)" optionLabel="name" optionValue="id"
+                        [filter]="true" filterBy="name" styleClass="w-full" placeholder="Buscar producto...">
+                    </p-dropdown>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Cantidad
+                        Comprada</label>
+                    <p-inputNumber [ngModel]="productQuantity()"
+                        (onInput)="productQuantity.set($any($event).value || 0)" mode="decimal" [min]="0"
+                        [showButtons]="true" styleClass="w-full">
+                    </p-inputNumber>
+                </div>
+            </div>
+        </div>
+        }
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Descripción <span class="text-red-500">*</span>
+            </label>
+            <input pInputText [ngModel]="formData().description" (ngModelChange)="updateFormDescription($event)"
+                placeholder="Ej: Alquiler del local" class="w-full" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Monto <span class="text-red-500">*</span>
+                </label>
+                <p-inputNumber [ngModel]="formData().amount" (onInput)="updateFormAmount($event.value)" mode="decimal"
+                    [min]="0" [maxFractionDigits]="2" [minFractionDigits]="2" styleClass="w-full" placeholder="0.00">
+                </p-inputNumber>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Moneda <span class="text-red-500">*</span>
+                </label>
+                <p-dropdown [options]="currencies" [ngModel]="formData().currency"
+                    (onChange)="updateFormCurrency($event.value)" optionLabel="label" optionValue="value"
+                    styleClass="w-full">
+                </p-dropdown>
+            </div>
+        </div>
+
+        @if (formData().currency === 'VES') {
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tasa de Cambio (VES/USD) <span class="text-red-500">*</span>
+            </label>
+            <p-inputNumber [ngModel]="formData().exchangeRate" (onInput)="updateFormExchangeRate($event.value)"
+                mode="decimal" [min]="0" [maxFractionDigits]="2" [minFractionDigits]="2" styleClass="w-full"
+                placeholder="0.00">
+            </p-inputNumber>
+            <small class="text-gray-500 dark:text-gray-400 text-xs mt-1 block">
+                Tasa de cambio utilizada para convertir el monto a USD
+            </small>
+            @if (hasValidExchangeRate()) {
+            <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <span class="text-xs text-blue-800 dark:text-blue-300 font-semibold">
+                    Equivalente en USD: ${{ calculateUSDEquivalent(formData().amount, formData().exchangeRate!) |
+                    number:'1.2-2' }}
+                </span>
+            </div>
+            }
+        </div>
+        }
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="flex items-center gap-2 mb-4">
+                <input type="checkbox" id="isRecurring" [checked]="formData().isRecurring"
+                    (change)="updateFormIsRecurring($any($event.target).checked)"
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <label for="isRecurring" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Gasto recurrente
+                </label>
+            </div>
+
+            @if (formData().isRecurring) {
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Frecuencia de Recurrencia <span class="text-red-500">*</span>
+                    </label>
+                    <p-dropdown [options]="recurrenceFrequencies" [ngModel]="formData().recurrenceFrequency"
+                        (onChange)="updateFormRecurrenceFrequency($event.value)" optionLabel="label" optionValue="value"
+                        styleClass="w-full" placeholder="Seleccione la frecuencia">
+                    </p-dropdown>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Fecha de Inicio <span class="text-red-500">*</span>
+                    </label>
+                    <p-calendar [ngModel]="recurrenceStartDateModel()"
+                        (ngModelChange)="updateFormRecurrenceStartDate($event)" [showIcon]="true" dateFormat="dd/mm/yy"
+                        [showButtonBar]="false" [showTime]="false" [showSeconds]="false" [hourFormat]="'24'"
+                        styleClass="w-full" [inputStyle]="{'width': '100%', 'font-size': '0.875rem'}"
+                        placeholder="Seleccione fecha de inicio">
+                    </p-calendar>
+                    <small class="text-gray-500 dark:text-gray-400 text-xs mt-1 block">
+                        La recurrencia comenzará desde esta fecha. Si no se especifica, comenzará desde hoy.
+                    </small>
+                </div>
+            </div>
+            }
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Notas (Opcional)
+            </label>
+            <textarea pInputTextarea [ngModel]="formData().notes" (ngModelChange)="updateFormNotes($event)" [rows]="4"
+                placeholder="Información adicional sobre el gasto" styleClass="w-full" [autoResize]="true"
+                [style]="{'min-height': '100px', 'resize': 'vertical'}">
+            </textarea>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2">
+            <p-button label="Cancelar" icon="pi pi-times" (onClick)="displayDialog.set(false)" severity="secondary"
+                [outlined]="true">
+            </p-button>
+            <p-button [label]="isEditMode() ? 'Actualizar' : 'Crear'" icon="pi pi-check" (onClick)="saveExpense()"
+                styleClass="font-semibold">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>

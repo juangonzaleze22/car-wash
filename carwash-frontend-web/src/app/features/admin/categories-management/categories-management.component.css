@@ -1,0 +1,30 @@
+/* Estilos específicos para el componente de gestión de categorías */
+
+/* Estilos de tabla eliminados para permitir que Tailwind controle los estilos (dark mode) */
+
+::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.75rem;
+}
+
+::ng-deep .p-dialog .p-dialog-content {
+    padding: 1.5rem;
+}
+
+/* Estilos para inputs del modal - asegurar 100% de ancho */
+::ng-deep .p-dialog .p-inputtext,
+::ng-deep .p-dialog .p-inputtextarea,
+::ng-deep .p-dialog .p-dropdown {
+    width: 100% !important;
+}
+
+::ng-deep .p-dialog .p-inputtext input,
+::ng-deep .p-dialog .p-inputtextarea textarea {
+    width: 100% !important;
+}
+
+/* Estilos para textarea */
+::ng-deep .p-inputtextarea {
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+}

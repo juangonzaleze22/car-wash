@@ -1,0 +1,12 @@
+<div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+    <p-paginator
+        [rows]="pagination().limit"
+        [totalRecords]="pagination().total"
+        [first]="first"
+        (onPageChange)="onPageChange.emit($event)"
+        [rowsPerPageOptions]="rowsPerPageOptions()"
+        [showCurrentPageReport]="showCurrentPageReport()"
+        [currentPageReportTemplate]="currentPageReportTemplate()">
+    </p-paginator>
+</div>
+

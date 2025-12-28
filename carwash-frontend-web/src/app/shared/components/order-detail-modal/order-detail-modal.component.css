@@ -1,0 +1,377 @@
+/* Dialog Background */
+::ng-deep .order-detail-dialog .p-dialog-content {
+    background-color: #ffffff !important;
+    padding: 0 !important;
+}
+
+::ng-deep .dark .order-detail-dialog .p-dialog-content {
+    background-color: #111827 !important;
+    padding: 0 !important;
+}
+
+::ng-deep .order-detail-dialog .p-dialog {
+    padding: 0 !important;
+}
+
+::ng-deep .order-detail-dialog .p-dialog-header {
+    padding: 0 !important;
+}
+
+/* TabView Estilizado */
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-nav {
+    background: #f9fafb !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    padding: 0 2rem !important;
+}
+
+::ng-deep .dark .order-detail-dialog .custom-tabview .p-tabview-nav {
+    background: #1f2937 !important;
+    border-bottom-color: #374151 !important;
+}
+
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-nav li .p-tabview-nav-link {
+    padding: 1rem 1.25rem !important;
+    font-weight: 500 !important;
+    font-size: 0.875rem !important;
+    color: #6b7280 !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    transition: all 0.2s ease !important;
+    margin-right: 0.5rem !important;
+}
+
+::ng-deep .dark .order-detail-dialog .custom-tabview .p-tabview-nav li .p-tabview-nav-link {
+    color: #9ca3af !important;
+}
+
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+    color: #3b82f6 !important;
+    border-bottom-color: #3b82f6 !important;
+    background: #ffffff !important;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+::ng-deep .dark .order-detail-dialog .custom-tabview .p-tabview-nav li.p-highlight .p-tabview-nav-link {
+    color: #60a5fa !important;
+    border-bottom-color: #60a5fa !important;
+    background: #111827 !important;
+}
+
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-nav li .p-tabview-nav-link:hover:not(.p-highlight) {
+    color: #374151 !important;
+    background: #f3f4f6 !important;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+::ng-deep .dark .order-detail-dialog .custom-tabview .p-tabview-nav li .p-tabview-nav-link:hover:not(.p-highlight) {
+    color: #d1d5db !important;
+    background: #374151 !important;
+}
+
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-panels {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+::ng-deep .order-detail-dialog .custom-tabview .p-tabview-nav-container {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Timeline Styles - Vertical (legacy) */
+::ng-deep .custom-timeline .p-timeline-event-marker {
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+::ng-deep .custom-timeline .p-timeline-event-connector {
+    background-color: #e5e7eb;
+    width: 2px;
+}
+
+::ng-deep .custom-timeline .p-timeline-event-content {
+    padding-left: 0.75rem;
+}
+
+::ng-deep .custom-timeline .p-timeline-event {
+    padding-bottom: 1rem;
+}
+
+::ng-deep .custom-timeline .p-timeline-event:last-child .p-timeline-event-connector {
+    display: none;
+}
+
+/* Timeline Styles - Horizontal */
+::ng-deep .custom-timeline-horizontal .p-timeline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    padding: 2rem 0 1rem 0;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline::before {
+    content: '';
+    position: absolute;
+    top: 2.5rem;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, #e5e7eb 0%, #3b82f6 50%, #e5e7eb 100%);
+    z-index: 0;
+    border-radius: 2px;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+    padding: 0 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event-marker-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event-marker {
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(59, 130, 246, 0.1);
+    margin: 0 auto;
+    transition: all 0.3s ease;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event-marker:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event-connector {
+    display: none; /* Ocultamos el conector individual ya que usamos ::before */
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event-content {
+    padding-top: 0.5rem;
+    text-align: center;
+    min-height: 60px;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event:first-child {
+    padding-left: 0;
+}
+
+::ng-deep .custom-timeline-horizontal .p-timeline-event:last-child {
+    padding-right: 0;
+}
+
+/* Timeline Horizontal Mejorado */
+::ng-deep .custom-timeline-minimal {
+    width: 100% !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    position: relative !important;
+    padding: 3rem 0 2rem 0 !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+    gap: 0 !important;
+    list-style: none !important;
+    margin: 0 !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 2.5rem !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 3px !important;
+    background-color: #e5e7eb !important;
+    z-index: 0 !important;
+    border-radius: 2px !important;
+}
+
+::ng-deep .dark .custom-timeline-minimal .p-timeline::before {
+    background-color: #374151 !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event {
+    flex: 1 1 0% !important;
+    min-width: 120px !important;
+    padding: 0 0.75rem !important;
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event-marker-container {
+    position: relative !important;
+    z-index: 2 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-bottom: 1rem !important;
+    width: 100% !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event-marker {
+    border: 3px solid white !important;
+    margin: 0 auto !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    z-index: 3 !important;
+}
+
+::ng-deep .dark .custom-timeline-minimal .p-timeline-event-marker {
+    border-color: #1f2937 !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event-connector {
+    display: none !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event-content {
+    padding-top: 0 !important;
+    text-align: center !important;
+    min-height: auto !important;
+    width: 100% !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event:first-child {
+    padding-left: 0 !important;
+}
+
+::ng-deep .custom-timeline-minimal .p-timeline-event:last-child {
+    padding-right: 0 !important;
+}
+
+/* Estilos para la galería de imágenes */
+::ng-deep .custom-galleria .p-galleria {
+    width: 100%;
+}
+
+::ng-deep .custom-galleria .p-galleria-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: transparent !important;
+}
+
+::ng-deep .custom-galleria .p-galleria-item-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white !important;
+}
+
+::ng-deep .custom-galleria .p-galleria-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white !important;
+}
+
+::ng-deep .custom-galleria .p-galleria-item img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 70vh !important;
+    object-fit: contain !important;
+    border-radius: 0.5rem;
+}
+
+::ng-deep .custom-galleria .p-galleria-item-wrapper {
+    background: white !important;
+}
+
+::ng-deep .dark .custom-galleria .p-galleria-item-wrapper {
+    background: white !important;
+}
+
+::ng-deep .p-galleria-thumbnail-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 0;
+    overflow-x: auto;
+}
+
+::ng-deep .p-galleria-thumbnail-item {
+    flex-shrink: 0;
+}
+
+::ng-deep .p-galleria-thumbnail-item img {
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+::ng-deep .p-galleria-thumbnail-item.p-highlight img {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+::ng-deep .p-galleria-item-nav {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+}
+
+::ng-deep .p-galleria-item-nav:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
+}
+
+::ng-deep .p-galleria-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+
+::ng-deep .p-galleria-indicator button {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: #d1d5db;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+::ng-deep .p-galleria-indicator.p-highlight button {
+    background: #3b82f6;
+    width: 1.5rem;
+    border-radius: 0.375rem;
+}
+
