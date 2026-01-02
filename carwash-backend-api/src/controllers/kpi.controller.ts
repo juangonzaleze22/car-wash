@@ -58,7 +58,7 @@ export const getWasherChartData = async (req: AuthRequest, res: Response) => {
 
         const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date();
         const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
-        
+
         // Si no se proporcionan fechas, usar último mes
         if (!req.query.startDate) {
             startDate.setMonth(startDate.getMonth() - 1);
@@ -84,7 +84,7 @@ export const getAdminChartData = async (req: AuthRequest, res: Response) => {
 
         const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date();
         const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
-        
+
         // Si no se proporcionan fechas, usar último mes
         if (!req.query.startDate) {
             startDate.setMonth(startDate.getMonth() - 1);
@@ -94,6 +94,49 @@ export const getAdminChartData = async (req: AuthRequest, res: Response) => {
         res.json(chartData);
     } catch (error: any) {
         res.status(500).json({ error: error.message || 'Error al obtener los datos de gráficas' });
+    }
+};
+
+/**
+ * GET /api/kpi/client/chart-data
+ * Datos históricos para gráficas del cliente
+ */
+export const getClientChartData = async (req: AuthRequest, res: Response) => {
+    try {
+        const client = req.client; // Los clientes se guardan en req.client
+        if (!client) {
+            return res.status(401).json({ error: 'No autenticado como cliente' });
+        }
+
+        const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date();
+        const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+
+        if (!req.query.startDate) {
+            startDate.setFullYear(startDate.getFullYear() - 1); // 1 año por defecto para el cliente
+        }
+
+        const chartData = await ChartDataService.getClientChartData(client.id, startDate, endDate);
+        res.json(chartData);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message || 'Error al obtener los datos de gráficas del cliente' });
+    }
+};
+
+/**
+ * GET /api/kpi/washer/efficiency
+ * Datos de eficiencia comparativa para el lavador
+ */
+export const getWasherEfficiencyData = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = req.user;
+        if (!user || user.role !== 'WASHER') {
+            return res.status(403).json({ error: 'Solo los lavadores pueden acceder a esta ruta' });
+        }
+
+        const efficiencyData = await ChartDataService.getWasherEfficiencyChartData(user.id);
+        res.json(efficiencyData);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message || 'Error al obtener datos de eficiencia' });
     }
 };
 

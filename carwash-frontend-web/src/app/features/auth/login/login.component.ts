@@ -8,6 +8,7 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { BrandService } from '../../../core/services/brand.service';
 
 @Component({
     selector: 'app-login',
@@ -29,6 +30,7 @@ export class LoginComponent {
     private fb = inject(FormBuilder);
     private authService = inject(AuthService);
     private messageService = inject(MessageService);
+    brandService = inject(BrandService);
 
     loginForm = this.fb.group({
         username: ['', Validators.required],

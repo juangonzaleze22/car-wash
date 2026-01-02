@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -8,6 +8,9 @@ import { SidebarModule } from 'primeng/sidebar';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
+import { BrandService } from '../../../core/services/brand.service';
+import { BrandLogoComponent } from '../../../shared/components/brand-logo/brand-logo.component';
+import { SidebarMenuComponent, MenuItem } from '../../../shared/components/sidebar-menu/sidebar-menu.component';
 
 @Component({
   selector: 'app-washer-layout',
@@ -21,7 +24,9 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
     SidebarModule,
     AvatarModule,
     MenuModule,
-    AppHeaderComponent
+    AppHeaderComponent,
+    BrandLogoComponent,
+    SidebarMenuComponent
   ],
   template: `
     <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -36,10 +41,7 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
         [class.translate-x-0]="sidebarVisible() || !isMobile()"
         [class.-translate-x-full]="!sidebarVisible() && isMobile()">
         <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-2">
-            <i class="pi pi-user text-2xl text-orange-600"></i>
-            <span class="font-bold text-xl text-gray-800 dark:text-white">CarWash Pro</span>
-          </div>
+          <app-brand-logo homeLink="/washer/dashboard"></app-brand-logo>
           <button 
             pButton 
             icon="pi pi-times" 
@@ -49,15 +51,12 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
             (click)="toggleSidebar()"></button>
         </div>
 
-        <div class="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-          <a routerLink="/washer/dashboard" routerLinkActive="bg-orange-50 text-orange-600" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-chart-bar"></i>
-            <span class="font-medium">Mi Dashboard</span>
-          </a>
-          <a routerLink="/washer/earnings" routerLinkActive="bg-orange-50 text-orange-600" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-dollar"></i>
-            <span class="font-medium">Mis Ganancias</span>
-          </a>
+        <div class="flex-1 overflow-y-auto">
+          <app-sidebar-menu 
+            [items]="menuItems()" 
+            themeColor="orange" 
+            (menuClick)="closeSidebarOnMobile()">
+          </app-sidebar-menu>
         </div>
 
         <div class="p-3 border-t border-gray-200 dark:border-gray-700">
@@ -95,7 +94,13 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
 export class WasherLayoutComponent {
   authService = inject(AuthService);
   themeService = inject(ThemeService);
+  brandService = inject(BrandService);
   sidebarVisible = signal(false);
+
+  menuItems = signal<MenuItem[]>([
+    { label: 'Mi Dashboard', icon: 'pi pi-chart-bar', route: '/washer/dashboard' },
+    { label: 'Mis Ganancias', icon: 'pi pi-dollar', route: '/washer/earnings' }
+  ]);
 
   isMobile(): boolean {
     return window.innerWidth < 992;

@@ -20,6 +20,7 @@ import * as ClientLocationController from '../controllers/client-location.contro
 import * as ConfigController from '../controllers/config.controller';
 import { authenticateToken, requireRole, requireClient } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
+import { brandingUpload } from '../middleware/branding-upload.middleware';
 
 const router = Router();
 
@@ -289,6 +290,21 @@ router.get(
     KPIController.getAdminChartData
 );
 
+// Client & Washer KPI Extras
+router.get(
+    '/kpi/client/chart-data',
+    authenticateToken,
+    KPIController.getClientChartData
+);
+
+router.get(
+    '/kpi/washer/efficiency',
+    authenticateToken,
+    requireRole(['WASHER']),
+    KPIController.getWasherEfficiencyData
+);
+
+
 // Expenses
 router.get(
     '/expenses',
@@ -529,6 +545,19 @@ router.delete(
 
 // System Configs
 router.get(
+    '/configs/branding',
+    ConfigController.getBranding
+);
+
+router.post(
+    '/configs/logo',
+    authenticateToken,
+    requireRole(['ADMIN']),
+    brandingUpload.single('logo'),
+    ConfigController.uploadLogo
+);
+
+router.get(
     '/configs',
     authenticateToken,
     ConfigController.getConfigs
@@ -550,7 +579,7 @@ router.patch(
     '/configs/:key',
     authenticateToken,
     requireRole(['ADMIN']),
-    ConfigController.updateConfig
+    ConfigController.updateSystemConfig
 );
 
 // Notifications

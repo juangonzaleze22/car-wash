@@ -7,7 +7,7 @@ import { TabViewModule } from 'primeng/tabview';
 import { CalendarModule } from 'primeng/calendar';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { KPIService, WasherKPIs, ChartData } from '../../../core/services/kpi.service';
+import { KPIService, WasherKPIs, ChartData, WasherEfficiencyData } from '../../../core/services/kpi.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { WebSocketService } from '../../../core/services/websocket.service';
@@ -27,7 +27,8 @@ import {
     ApexGrid,
     ApexStroke,
     ApexLegend,
-    ApexTooltip
+    ApexTooltip,
+    ApexPlotOptions
 } from 'ng-apexcharts';
 
 export type ChartOptions = {
@@ -44,6 +45,7 @@ export type ChartOptions = {
     stroke: ApexStroke;
     legend: ApexLegend;
     tooltip: ApexTooltip;
+    plotOptions?: ApexPlotOptions;
     colors?: string[];
 };
 
@@ -76,6 +78,8 @@ export class WasherDashboardComponent implements OnInit, OnDestroy {
     chartData = signal<ChartData | null>(null);
     loading = signal(true);
     chartLoading = signal(false);
+    efficiencyLoading = signal(false);
+    efficiencyData = signal<WasherEfficiencyData | null>(null);
     private socketSubscription?: Subscription;
 
     // Period filter
@@ -102,10 +106,16 @@ export class WasherDashboardComponent implements OnInit, OnDestroy {
         chart: { type: 'bar', height: 350 },
         xaxis: { categories: [] }
     };
+    efficiencyChartOptions: Partial<ChartOptions> = {
+        series: [],
+        chart: { type: 'bar', height: 350 },
+        xaxis: { categories: [] }
+    };
 
     ngOnInit() {
         this.loadKPIs();
         this.loadChartData();
+        this.loadEfficiencyData();
         this.setupSocketListeners();
         this.initChartOptions();
     }
@@ -215,6 +225,18 @@ export class WasherDashboardComponent implements OnInit, OnDestroy {
         });
     }
 
+    loadEfficiencyData() {
+        this.efficiencyLoading.set(true);
+        this.kpiService.getWasherEfficiencyData().subscribe({
+            next: (data) => {
+                this.efficiencyData.set(data);
+                this.updateEfficiencyChart(data);
+                this.efficiencyLoading.set(false);
+            },
+            error: () => this.efficiencyLoading.set(false)
+        });
+    }
+
     initChartOptions() {
         this.earningsChartOptions = {
             series: [],
@@ -268,6 +290,36 @@ export class WasherDashboardComponent implements OnInit, OnDestroy {
                 strokeDashArray: 4
             }
         };
+
+        this.efficiencyChartOptions = {
+            series: [],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: { show: false }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    dataLabels: { position: 'top' }
+                }
+            } as any,
+            dataLabels: {
+                enabled: true,
+                offsetX: -6,
+                style: { fontSize: '12px', colors: ['#fff'] },
+                formatter: (val: number) => `${val}m`
+            },
+            stroke: { show: true, width: 1, colors: ['#fff'] },
+            xaxis: { categories: [] },
+            colors: ['#3B82F6', '#94A3B8'],
+            legend: { position: 'top' },
+            tooltip: {
+                y: {
+                    formatter: (val: number) => `${val} minutos`
+                }
+            }
+        };
     }
 
     updateCharts(data: ChartData) {
@@ -304,6 +356,26 @@ export class WasherDashboardComponent implements OnInit, OnDestroy {
             xaxis: {
                 ...this.ordersChartOptions.xaxis,
                 categories: data.dates
+            }
+        };
+    }
+
+    updateEfficiencyChart(data: WasherEfficiencyData) {
+        this.efficiencyChartOptions = {
+            ...this.efficiencyChartOptions,
+            series: [
+                {
+                    name: 'Mi Tiempo Promedio',
+                    data: data.washerAverages
+                },
+                {
+                    name: 'Promedio General',
+                    data: data.globalAverages
+                }
+            ],
+            xaxis: {
+                ...this.efficiencyChartOptions.xaxis,
+                categories: data.services
             }
         };
     }

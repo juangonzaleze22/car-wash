@@ -31,6 +31,10 @@ export class ConfigService {
         });
     }
 
+    getBranding(): Observable<SystemConfig[]> {
+        return this.http.get<SystemConfig[]>(`${this.apiUrl}/branding`);
+    }
+
     getConfig(key: string): Observable<SystemConfig> {
         return this.http.get<SystemConfig>(`${this.apiUrl}/${key}`, {
             headers: this.getHeaders()
@@ -40,6 +44,18 @@ export class ConfigService {
     updateConfig(key: string, data: { value: string, description?: string }): Observable<SystemConfig> {
         return this.http.patch<SystemConfig>(`${this.apiUrl}/${key}`, data, {
             headers: this.getHeaders()
+        });
+    }
+
+    uploadLogo(file: File): Observable<SystemConfig> {
+        const formData = new FormData();
+        formData.append('logo', file);
+        formData.append('description', 'Logo del negocio');
+
+        return this.http.post<SystemConfig>(`${this.apiUrl}/logo`, formData, {
+            headers: new HttpHeaders({
+                'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('clientToken')}`
+            })
         });
     }
 

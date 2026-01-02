@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { SkeletonModule } from 'primeng/skeleton';
+import { ThemeService } from '../../../core/services/theme.service';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -19,6 +20,25 @@ import { PatioDashboardComponent } from '../../supervisor/dashboard/patio-dashbo
 import { WebSocketService } from '../../../core/services/websocket.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Subscription } from 'rxjs';
+import { NgApexchartsModule, ChartComponent, ApexAxisChartSeries, ApexChart, ApexXAxis, ApexDataLabels, ApexTooltip, ApexStroke, ApexYAxis, ApexTitleSubtitle, ApexFill, ApexLegend, ApexPlotOptions, ApexResponsive, ApexGrid } from 'ng-apexcharts';
+
+export type ChartOptions = {
+    series: ApexAxisChartSeries | any;
+    chart: ApexChart | any;
+    xaxis: ApexXAxis | any;
+    stroke: ApexStroke | any;
+    dataLabels: ApexDataLabels | any;
+    tooltip: ApexTooltip | any;
+    fill: ApexFill | any;
+    yaxis: ApexYAxis | any;
+    title: ApexTitleSubtitle | any;
+    labels: any;
+    legend: ApexLegend | any;
+    plotOptions: ApexPlotOptions | any;
+    responsive: ApexResponsive[] | any;
+    grid: ApexGrid | any;
+    colors: string[] | any;
+};
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -37,7 +57,8 @@ import { Subscription } from 'rxjs';
         SelectButtonModule,
         DropdownModule,
         ToastModule,
-        PatioDashboardComponent
+        PatioDashboardComponent,
+        NgApexchartsModule
     ],
     providers: [MessageService],
     templateUrl: './admin-dashboard.component.html',
@@ -49,13 +70,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private messageService = inject(MessageService);
     private webSocketService = inject(WebSocketService);
     private authService = inject(AuthService);
+    themeService = inject(ThemeService);
 
     kpis = signal<AdminKPIs | null>(null);
     loading = signal(true);
     showKPIs = signal(true);
     upcomingRecurringExpenses = signal<Expense[]>([]);
     loadingRecurringExpenses = signal(false);
+    loadingCharts = signal(true);
     private socketSubscription?: Subscription;
+
+    // Chart Options
+    financialChartOptions = signal<Partial<ChartOptions> | null>(null);
+    distributionChartOptions = signal<Partial<ChartOptions> | null>(null);
+    efficiencyChartOptions = signal<Partial<ChartOptions> | null>(null);
 
     // Period filter
     selectedPeriod = signal<'today' | 'week' | 'month' | 'year' | 'custom'>('today');
@@ -78,6 +106,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.loadKPIs();
         this.loadUpcomingRecurringExpenses();
+        this.loadChartData();
         this.setupSocketListeners();
     }
 
@@ -137,12 +166,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     onPeriodChange() {
         if (this.selectedPeriod() !== 'custom') {
             this.loadKPIs();
+            this.loadChartData();
         }
     }
 
     onCustomDateChange() {
         if (this.customStartDate() && this.customEndDate()) {
             this.loadKPIs();
+            this.loadChartData();
         }
     }
 
@@ -186,6 +217,225 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
     toggleView() {
         this.showKPIs.update(v => !v);
+    }
+
+    loadChartData() {
+        this.loadingCharts.set(true);
+        const { startDate, endDate } = this.getDateRange();
+
+        this.kpiService.getAdminChartData(startDate, endDate).subscribe({
+            next: (data: any) => {
+                this.setupFinancialChart(data);
+                this.setupDistributionChart();
+                this.setupEfficiencyChart();
+                this.loadingCharts.set(false);
+            },
+            error: (err) => {
+                console.error('Error al cargar datos de gráficas:', err);
+                this.loadingCharts.set(false);
+            }
+        });
+    }
+
+    private setupFinancialChart(data: any) {
+        const isDark = this.themeService.isDarkMode();
+        const textColor = isDark ? '#e5e7eb' : '#374151';
+        const gridColor = isDark ? '#374151' : '#f3f4f6';
+
+        this.financialChartOptions.set({
+            series: [
+                { name: 'Ingresos', data: data.revenues },
+                { name: 'Gastos', data: data.expenses.map((v: number) => -v) },
+                { name: 'Ganancia Neta', data: data.netProfit }
+            ],
+            chart: {
+                type: 'area',
+                height: 350,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                background: 'transparent',
+                foreColor: textColor
+            },
+            colors: ['#3b82f6', '#ef4444', '#10b981'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [20, 100, 100, 100]
+                }
+            },
+            xaxis: {
+                categories: data.dates.map((d: string) => {
+                    const date = new Date(d);
+                    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                }),
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+                labels: { style: { colors: textColor } }
+            },
+            yaxis: {
+                labels: {
+                    formatter: (val: number) => `$${val.toFixed(0)}`,
+                    style: { colors: textColor }
+                }
+            },
+            grid: {
+                borderColor: gridColor,
+                strokeDashArray: 4,
+                padding: { left: 20, right: 20 }
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                x: { show: true },
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif'
+                },
+                y: {
+                    formatter: (val: number) => `$${val.toFixed(2)}`
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right',
+                labels: { colors: textColor }
+            }
+        });
+    }
+
+    private setupDistributionChart() {
+        const kpis = this.kpis();
+        if (!kpis || !kpis.servicesByCategory) return;
+
+        const isDark = this.themeService.isDarkMode();
+        const textColor = isDark ? '#e5e7eb' : '#374151';
+
+        const categories = kpis.servicesByCategory;
+        const series = categories.map(c => c.serviceCount);
+        const labels = categories.map(c => c.categoryName);
+
+        this.distributionChartOptions.set({
+            series: series,
+            chart: {
+                type: 'donut',
+                height: 350,
+                background: 'transparent',
+                foreColor: textColor
+            },
+            labels: labels,
+            colors: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4'],
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '70%',
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true,
+                                color: textColor
+                            },
+                            value: {
+                                show: true,
+                                color: textColor
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                color: textColor,
+                                formatter: () => series.reduce((a, b) => a + b, 0).toString()
+                            }
+                        }
+                    }
+                }
+            },
+            legend: {
+                position: 'bottom',
+                labels: {
+                    colors: textColor,
+                    useSeriesColors: false
+                }
+            },
+            dataLabels: { enabled: false },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif'
+                }
+            },
+            stroke: { show: false }
+        });
+    }
+
+    private setupEfficiencyChart() {
+        const kpis = this.kpis();
+        if (!kpis || !kpis.avgTimeByWasher) return;
+
+        const isDark = this.themeService.isDarkMode();
+        const textColor = isDark ? '#e5e7eb' : '#374151';
+        const gridColor = isDark ? '#374151' : '#f3f4f6';
+
+        const data = kpis.avgTimeByWasher.sort((a, b) => b.avgTimeMinutes - a.avgTimeMinutes);
+        const names = data.map(d => d.washerName);
+        const times = data.map(d => Math.round(d.avgTimeMinutes));
+
+        this.efficiencyChartOptions.set({
+            series: [{
+                name: 'Minutos Promedio',
+                data: times
+            }],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: { show: false },
+                background: 'transparent',
+                foreColor: textColor
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    borderRadius: 4,
+                    barHeight: '60%',
+                    distributed: true
+                }
+            },
+            colors: ['#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef'],
+            dataLabels: {
+                enabled: true,
+                formatter: (val: number) => `${val} min`,
+                textAnchor: 'start',
+                style: { colors: ['#fff'] },
+                offsetX: 0
+            },
+            xaxis: {
+                categories: names,
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+                labels: { style: { colors: textColor } }
+            },
+            yaxis: {
+                labels: { style: { colors: textColor } }
+            },
+            grid: {
+                borderColor: gridColor,
+                strokeDashArray: 4
+            },
+            tooltip: {
+                theme: isDark ? 'dark' : 'light',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif'
+                },
+                y: {
+                    formatter: (val: number) => `${val} minutos por servicio`
+                }
+            },
+            legend: { show: false }
+        });
     }
 
     /**

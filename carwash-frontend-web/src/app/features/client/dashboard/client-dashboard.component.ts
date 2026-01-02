@@ -7,11 +7,12 @@ import { TableModule } from 'primeng/table';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
-import { TabViewModule } from 'primeng/tabview';
-import { DropdownModule } from 'primeng/dropdown';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { Subscription } from 'rxjs';
+import { NgApexchartsModule } from 'ng-apexcharts';
+
+import { KPIService, ClientChartData } from '../../../core/services/kpi.service';
 import { ClientDashboardService, ClientDashboard, OrderDetails } from '../../../core/services/client-dashboard.service';
 import { ExchangeRateService } from '../../../core/services/exchange-rate.service';
 import { WebSocketService } from '../../../core/services/websocket.service';
@@ -34,7 +35,8 @@ import { RouterLink } from '@angular/router';
         DialogModule,
         VesCurrencyPipe,
         UsdCurrencyPipe,
-        RouterLink
+        RouterLink,
+        NgApexchartsModule
     ],
     providers: [MessageService],
     templateUrl: './client-dashboard.component.html',
@@ -42,6 +44,7 @@ import { RouterLink } from '@angular/router';
 })
 export class ClientDashboardComponent implements OnInit, OnDestroy {
     private dashboardService = inject(ClientDashboardService);
+    private kpiService = inject(KPIService);
     private messageService = inject(MessageService);
     private exchangeRateService = inject(ExchangeRateService);
     private webSocketService = inject(WebSocketService);
@@ -54,21 +57,35 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
     showOrderDialog = signal(false);
     loadingOrder = signal(false);
 
+    // KPI Chart Data
+    clientChartData = signal<ClientChartData | null>(null);
+    chartsLoading = signal(false);
+
+    // Chart properties
+    trendChartOptions: any = {};
+    distributionChartOptions: any = {};
+
     // Tasa de cambio
     exchangeRate = signal<number>(0);
     loadingExchangeRate = signal(false);
 
     private socketSubscription?: Subscription;
+    private timerSubscription?: Subscription;
 
     ngOnInit() {
         this.loadDashboard();
         this.loadExchangeRate();
+        this.loadChartData();
         this.setupSocketListeners();
+        this.initChartOptions();
     }
 
     ngOnDestroy() {
         if (this.socketSubscription) {
             this.socketSubscription.unsubscribe();
+        }
+        if (this.timerSubscription) {
+            this.timerSubscription.unsubscribe();
         }
     }
 
@@ -113,7 +130,42 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
                 }
             }
         });
+
+        // Escuchar actualizaciones de solicitudes de lavado a domicilio
+        this.webSocketService.listen<any>('delivery-requests:updated').subscribe((updated) => {
+            const currentDashboard = this.dashboard();
+            if (!currentDashboard) return;
+
+            // Verificar si la solicitud pertenece al cliente actual
+            if (updated.clientId === currentDashboard.client?.id) {
+                // Recargar el dashboard para ver cambios
+                this.loadDashboard();
+
+                this.messageService.add({
+                    severity: updated.status === 'ACCEPTED' ? 'success' : 'warn',
+                    summary: 'Estado de Solicitud',
+                    detail: `Tu solicitud para ${updated.vehicle?.plate || 'tu vehículo'} ha sido ${updated.status}. ${updated.cancellationReason ? 'Motivo: ' + updated.cancellationReason : ''}`
+                });
+            }
+        });
+
+        // Escuchar el pulso de tiempo desde el servidor (WebSocket)
+        this.timerSubscription = this.webSocketService.listen<any>('orders:timer-tick').subscribe(() => {
+            const currentDashboard = this.dashboard();
+            if (currentDashboard && currentDashboard.pendingOrders.length > 0) {
+                const updatedOrders = currentDashboard.pendingOrders.map(order => ({
+                    ...order,
+                    elapsedMinutes: order.status === 'IN_PROGRESS' ? (order.elapsedMinutes || 0) + 1 : (order.elapsedMinutes || 0)
+                }));
+
+                this.dashboard.set({
+                    ...currentDashboard,
+                    pendingOrders: updatedOrders
+                });
+            }
+        });
     }
+
 
     loadDashboard() {
         this.loading.set(true);
@@ -262,5 +314,88 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
         return `${hours} h ${remainingMinutes} min`;
     }
 
+    loadChartData() {
+        this.chartsLoading.set(true);
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setFullYear(endDate.getFullYear() - 1); // 1 año
+
+        this.kpiService.getClientChartData(startDate, endDate).subscribe({
+            next: (data) => {
+                this.clientChartData.set(data);
+                this.updateCharts(data);
+                this.chartsLoading.set(false);
+            },
+            error: () => this.chartsLoading.set(false)
+        });
+    }
+
+    initChartOptions() {
+        this.trendChartOptions = {
+            series: [],
+            chart: {
+                type: 'area',
+                height: 350,
+                toolbar: { show: false },
+                zoom: { enabled: false }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: { categories: [], type: 'datetime' },
+            yaxis: [
+                {
+                    title: { text: 'Gasto (USD)' },
+                    labels: { formatter: (val: number) => `$${val.toFixed(2)}` }
+                },
+                {
+                    opposite: true,
+                    title: { text: 'Visitas' },
+                    labels: { formatter: (val: number) => Math.round(val).toString() }
+                }
+            ],
+            colors: ['#3B82F6', '#10B981'],
+            tooltip: { shared: true, intersect: false }
+        };
+
+        this.distributionChartOptions = {
+            series: [],
+            chart: {
+                type: 'donut',
+                height: 350
+            },
+            labels: [],
+            legend: { position: 'bottom' },
+            responsive: [{
+                breakpoint: 480,
+                options: { chart: { width: 300 }, legend: { position: 'bottom' } }
+            }]
+        };
+    }
+
+    updateCharts(data: ClientChartData) {
+        this.trendChartOptions = {
+            ...this.trendChartOptions,
+            series: [
+                {
+                    name: 'Gasto Total',
+                    data: data.trend.spending
+                },
+                {
+                    name: 'Visitas',
+                    data: data.trend.visits
+                }
+            ],
+            xaxis: {
+                ...this.trendChartOptions.xaxis,
+                categories: data.trend.dates
+            }
+        };
+
+        this.distributionChartOptions = {
+            ...this.distributionChartOptions,
+            series: data.distribution.values,
+            labels: data.distribution.labels
+        };
+    }
 }
 

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -6,6 +6,9 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
+import { BrandService } from '../../../core/services/brand.service';
+import { BrandLogoComponent } from '../../../shared/components/brand-logo/brand-logo.component';
+import { SidebarMenuComponent, MenuItem } from '../../../shared/components/sidebar-menu/sidebar-menu.component';
 
 @Component({
   selector: 'app-cashier-layout',
@@ -16,9 +19,10 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
     RouterLink,
     RouterLinkActive,
     ButtonModule,
-    ButtonModule,
     AvatarModule,
-    AppHeaderComponent
+    AppHeaderComponent,
+    BrandLogoComponent,
+    SidebarMenuComponent
   ],
   template: `
     <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -33,10 +37,7 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
         [class.translate-x-0]="sidebarVisible() || !isMobile()"
         [class.-translate-x-full]="!sidebarVisible() && isMobile()">
         <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-2">
-            <i class="pi pi-shopping-cart text-2xl text-green-600"></i>
-            <span class="font-bold text-xl text-gray-800 dark:text-white">CarWash Pro</span>
-          </div>
+          <app-brand-logo homeLink="/cashier/pos" fallbackIcon="pi-dollar"></app-brand-logo>
           <button 
             pButton 
             icon="pi pi-times" 
@@ -46,19 +47,12 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
             (click)="toggleSidebar()"></button>
         </div>
 
-        <div class="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-          <a routerLink="/cashier/pos" routerLinkActive="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-dollar"></i>
-            <span class="font-medium">Punto de Venta</span>
-          </a>
-          <a routerLink="/cashier/orders" routerLinkActive="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-list"></i>
-            <span class="font-medium">Registro de Órdenes</span>
-          </a>
-          <a routerLink="/cashier/daily-report" routerLinkActive="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-file-excel"></i>
-            <span class="font-medium">Cierre de Caja</span>
-          </a>
+        <div class="flex-1 overflow-y-auto">
+          <app-sidebar-menu 
+            [items]="menuItems()" 
+            themeColor="green" 
+            (menuClick)="closeSidebarOnMobile()">
+          </app-sidebar-menu>
         </div>
 
         <div class="p-3 border-t border-gray-200 dark:border-gray-700">
@@ -96,7 +90,14 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
 export class CashierLayoutComponent {
   authService = inject(AuthService);
   themeService = inject(ThemeService);
+  brandService = inject(BrandService);
   sidebarVisible = signal(false);
+
+  menuItems = signal<MenuItem[]>([
+    { label: 'Punto de Venta', icon: 'pi pi-dollar', route: '/cashier/pos' },
+    { label: 'Registro de Órdenes', icon: 'pi pi-list', route: '/cashier/orders' },
+    { label: 'Cierre de Caja', icon: 'pi pi-file-excel', route: '/cashier/daily-report' }
+  ]);
 
   isMobile(): boolean {
     return window.innerWidth < 992;

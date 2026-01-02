@@ -9,6 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { InputMaskModule } from 'primeng/inputmask';
+import { BrandService } from '../../../core/services/brand.service';
 
 @Component({
     selector: 'app-client-login',
@@ -31,6 +32,7 @@ export class ClientLoginComponent {
     private fb = inject(FormBuilder);
     private clientAuthService = inject(ClientAuthService);
     private messageService = inject(MessageService);
+    brandService = inject(BrandService);
 
     loginForm = this.fb.group({
         phone: ['', [Validators.required, Validators.minLength(10)]],
@@ -57,19 +59,19 @@ export class ClientLoginComponent {
             this.clientAuthService.login({ phone: cleanPhone, password: this.loginForm.value.password || '' }).subscribe({
                 next: () => {
                     this.loading = false;
-                    this.messageService.add({ 
-                        severity: 'success', 
-                        summary: 'Bienvenido', 
-                        detail: 'Has iniciado sesión correctamente' 
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Bienvenido',
+                        detail: 'Has iniciado sesión correctamente'
                     });
                 },
                 error: (err) => {
                     this.loading = false;
                     const errorMessage = err.error?.error || 'Error al iniciar sesión';
-                    this.messageService.add({ 
-                        severity: 'error', 
-                        summary: 'Error', 
-                        detail: errorMessage 
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage
                     });
                 }
             });

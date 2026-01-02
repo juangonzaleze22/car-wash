@@ -1,55 +1,46 @@
 <div class="app-header bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
     <div class="flex items-center justify-between px-4 lg:px-6 py-3 gap-4">
         <!-- Left: Mobile menu button -->
-        <button 
-            pButton 
-            icon="pi pi-bars" 
-            [text]="true" 
-            [rounded]="true"
-            class="lg:hidden"
-            (click)="onToggleSidebar()">
+        <button pButton icon="pi pi-bars" [text]="true" [rounded]="true" class="lg:hidden" (click)="onToggleSidebar()">
         </button>
 
         <!-- Center: Exchange Rates -->
-        <div class="flex-1 flex items-center justify-center gap-6 min-w-0">
+        <div class="hidden md:flex flex-1 items-center justify-center gap-6 min-w-0">
             @if (rates() && !loadingRates() && !errorRates()) {
-                <div class="flex items-center gap-6 text-sm">
-                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <i class="pi pi-dollar text-blue-600 dark:text-blue-400"></i>
-                        <span class="font-semibold">USD:</span>
-                        <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(rates()!.data.usd.average) }} Bs.</span>
-                    </div>
-                    <div class="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
-                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <span class="text-blue-600 dark:text-blue-400 font-bold">€</span>
-                        <span class="font-semibold">EUR:</span>
-                        <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(rates()!.data.eur.average) }} Bs.</span>
-                    </div>
+            <div class="flex items-center gap-6 text-sm">
+                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <i class="pi pi-dollar text-blue-600 dark:text-blue-400"></i>
+                    <span class="font-semibold">USD:</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(rates()!.data.usd.average)
+                        }} Bs.</span>
                 </div>
+                <div class="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
+                <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <span class="text-blue-600 dark:text-blue-400 font-bold">€</span>
+                    <span class="font-semibold">EUR:</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(rates()!.data.eur.average)
+                        }} Bs.</span>
+                </div>
+            </div>
             } @else if (loadingRates()) {
-                <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                    <i class="pi pi-spin pi-spinner text-xs"></i>
-                    <span>Cargando tasas...</span>
-                </div>
+            <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                <i class="pi pi-spin pi-spinner text-xs"></i>
+                <span>Cargando tasas...</span>
+            </div>
             } @else if (errorRates()) {
-                <div class="flex items-center gap-2 text-red-500 dark:text-red-400 text-sm">
-                    <i class="pi pi-exclamation-triangle text-xs"></i>
-                    <span>Tasas no disponibles</span>
-                </div>
+            <div class="flex items-center gap-2 text-red-500 dark:text-red-400 text-sm">
+                <i class="pi pi-exclamation-triangle text-xs"></i>
+                <span>Tasas no disponibles</span>
+            </div>
             }
         </div>
 
         <!-- Right: Theme toggle, notifications, logout -->
         <div class="flex items-center gap-3">
             <!-- Theme Toggle -->
-            <button 
-                pButton 
-                [icon]="themeService.isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'" 
-                [text]="true" 
-                [rounded]="true"
-                [pTooltip]="themeService.isDarkMode() ? 'Modo Claro' : 'Modo Oscuro'"
-                tooltipPosition="bottom"
-                (click)="toggleTheme()"
+            <button pButton [icon]="themeService.isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'" [text]="true"
+                [rounded]="true" [pTooltip]="themeService.isDarkMode() ? 'Modo Claro' : 'Modo Oscuro'"
+                tooltipPosition="bottom" (click)="toggleTheme()"
                 class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white">
             </button>
 
@@ -57,17 +48,10 @@
             <app-notification></app-notification>
 
             <!-- Logout -->
-            <button 
-                pButton 
-                icon="pi pi-sign-out" 
-                [text]="true" 
-                [rounded]="true"
-                pTooltip="Cerrar Sesión"
-                tooltipPosition="bottom"
-                (click)="logout()"
+            <button pButton icon="pi pi-sign-out" [text]="true" [rounded]="true" pTooltip="Cerrar Sesión"
+                tooltipPosition="bottom" (click)="logout()"
                 class="p-button-danger text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300">
             </button>
         </div>
     </div>
 </div>
-

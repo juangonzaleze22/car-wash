@@ -73,6 +73,7 @@ import * as L from 'leaflet';
                                 <th class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Servicios</th>
                                 <th class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase text-right">Total</th>
                                 <th class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase text-center">Estado</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Motivo</th>
                                 <th class="py-3 px-4 text-xs font-bold text-gray-700 dark:text-gray-300 uppercase text-center">Acciones</th>
                             </tr>
                         </ng-template>
@@ -100,6 +101,11 @@ import * as L from 'leaflet';
                                 <td class="py-3 px-4 text-center">
                                     <p-tag [value]="request.status" [severity]="getStatusSeverity(request.status)" styleClass="text-[9px] font-bold"></p-tag>
                                 </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-xs text-gray-500 italic max-w-[200px] truncate block" [pTooltip]="request.cancellationReason" tooltipPosition="top">
+                                        {{ request.cancellationReason || '-' }}
+                                    </span>
+                                </td>
                                 <td class="py-3 px-4 text-center">
                                     <p-button 
                                         icon="pi pi-search" 
@@ -116,7 +122,7 @@ import * as L from 'leaflet';
                         </ng-template>
                         <ng-template pTemplate="emptymessage">
                             <tr>
-                                <td colspan="6" class="py-12 text-center text-gray-400 font-medium">
+                                <td colspan="7" class="py-12 text-center text-gray-400 font-medium">
                                     <i class="pi pi-inbox text-4xl mb-4 block opacity-20"></i>
                                     Aún no has realizado ninguna solicitud de lavado.
                                 </td>
@@ -324,8 +330,14 @@ export class MyWashRequestsComponent implements OnInit, OnDestroy {
             attributionControl: false
         }).setView([req.latitude, req.longitude], 16);
 
+        const pinIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2776/2776067.png',
+            iconSize: [38, 38],
+            iconAnchor: [19, 38]
+        });
+
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-        L.marker([req.latitude, req.longitude]).addTo(this.map);
+        L.marker([req.latitude, req.longitude], { icon: pinIcon }).addTo(this.map);
     }
 
     cleanupMap() {

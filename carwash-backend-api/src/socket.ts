@@ -30,6 +30,13 @@ export const initSocket = (httpServer: HttpServer) => {
         });
     });
 
+    // Enviar un pulso de tiempo cada minuto a todos los clientes conectados
+    setInterval(() => {
+        if (io) {
+            io.emit('orders:timer-tick', { timestamp: new Date() });
+        }
+    }, 60000);
+
     return io;
 };
 

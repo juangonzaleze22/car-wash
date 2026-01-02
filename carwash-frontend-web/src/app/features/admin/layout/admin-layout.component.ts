@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -11,6 +11,9 @@ import { MenuModule } from 'primeng/menu';
 import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { AppHeaderComponent } from '../../../shared/components/app-header/app-header.component';
+import { BrandService } from '../../../core/services/brand.service';
+import { BrandLogoComponent } from '../../../shared/components/brand-logo/brand-logo.component';
+import { SidebarMenuComponent, MenuItem } from '../../../shared/components/sidebar-menu/sidebar-menu.component';
 
 @Component({
   selector: 'app-admin-layout',
@@ -26,7 +29,9 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
     MenuModule,
     TooltipModule,
     BadgeModule,
-    AppHeaderComponent
+    AppHeaderComponent,
+    BrandLogoComponent,
+    SidebarMenuComponent
   ],
   styleUrl: './admin-layout.component.css',
   template: `
@@ -42,10 +47,7 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
         [class.translate-x-0]="sidebarVisible() || !isMobile()"
         [class.-translate-x-full]="!sidebarVisible() && isMobile()">
         <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-          <div class="flex items-center gap-2">
-            <i class="pi pi-shield text-2xl text-purple-600"></i>
-            <span class="font-bold text-xl text-gray-800 dark:text-white">CarWash Pro</span>
-          </div>
+          <app-brand-logo homeLink="/admin/dashboard" fallbackIcon="pi-shield"></app-brand-logo>
           <button 
             pButton 
             icon="pi pi-times" 
@@ -55,62 +57,12 @@ import { AppHeaderComponent } from '../../../shared/components/app-header/app-he
             (click)="toggleSidebar()"></button>
         </div>
 
-        <div class="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-          <a routerLink="/admin/dashboard" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-th-large"></i>
-            <span class="font-medium">Dashboard</span>
-          </a>
-          <a routerLink="/admin/services" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-percentage"></i>
-            <span class="font-medium">Servicios y % Comisión</span>
-          </a>
-          <a routerLink="/admin/washers" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-users"></i>
-            <span class="font-medium">Lavadores</span>
-          </a>
-          <a routerLink="/admin/washer-earnings" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-dollar"></i>
-            <span class="font-medium">Ganancias Lavadores</span>
-          </a>
-          <a routerLink="/admin/expenses" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-money-bill"></i>
-            <span class="font-medium">Gastos</span>
-          </a>
-          <a routerLink="/admin/products" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-box"></i>
-            <span class="font-medium">Productos e Inventario</span>
-            @if (lowStockCount() > 0) {
-              <p-badge [value]="lowStockCount().toString()" severity="danger" styleClass="ml-auto"></p-badge>
-            }
-          </a>
-              <a routerLink="/admin/vehicles" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-                <i class="pi pi-car"></i>
-                <span class="font-medium">Vehiculos</span>
-              </a>
-          <a routerLink="/admin/categories" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-tags"></i>
-            <span class="font-medium">Tipo de Vehículo</span>
-          </a>
-          <a routerLink="/admin/check-in" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-plus-circle"></i>
-            <span class="font-medium">Nuevo Ingreso</span>
-          </a>
-          <a routerLink="/admin/orders" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-list"></i>
-            <span class="font-medium">Registro de Órdenes</span>
-          </a>
-          <a routerLink="/admin/requests" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-map-marker"></i>
-            <span class="font-medium">Solicitudes</span>
-          </a>
-          <a routerLink="/admin/config" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-cog"></i>
-            <span class="font-medium">Configuración</span>
-          </a>
-          <a routerLink="/admin/daily-report" routerLinkActive="bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" class="p-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 no-underline flex items-center gap-2 transition-colors cursor-pointer" (click)="closeSidebarOnMobile()">
-            <i class="pi pi-file-pdf"></i>
-            <span class="font-medium">Reporte Diario</span>
-          </a>
+        <div class="flex-1 overflow-y-auto">
+          <app-sidebar-menu 
+            [items]="menuItems()" 
+            themeColor="purple" 
+            (menuClick)="closeSidebarOnMobile()">
+          </app-sidebar-menu>
         </div>
 
         <div class="p-3 border-t border-gray-200 dark:border-gray-700">
@@ -162,9 +114,31 @@ export class AdminLayoutComponent implements OnInit {
   authService = inject(AuthService);
   themeService = inject(ThemeService);
   productService = inject(ProductService);
+  brandService = inject(BrandService);
   router = inject(Router);
   sidebarVisible = signal(false);
   lowStockCount = signal(0);
+
+  menuItems = computed<MenuItem[]>(() => [
+    { label: 'Dashboard', icon: 'pi pi-th-large', route: '/admin/dashboard' },
+    { label: 'Servicios y % Comisión', icon: 'pi pi-percentage', route: '/admin/services' },
+    { label: 'Lavadores', icon: 'pi pi-users', route: '/admin/washers' },
+    { label: 'Ganancias Lavadores', icon: 'pi pi-dollar', route: '/admin/washer-earnings' },
+    { label: 'Gastos', icon: 'pi pi-money-bill', route: '/admin/expenses' },
+    {
+      label: 'Productos e Inventario',
+      icon: 'pi pi-box',
+      route: '/admin/products',
+      badge: this.lowStockCount() > 0 ? this.lowStockCount().toString() : undefined
+    },
+    { label: 'Vehículos', icon: 'pi pi-car', route: '/admin/vehicles' },
+    { label: 'Tipo de Vehículo', icon: 'pi pi-tags', route: '/admin/categories' },
+    { label: 'Nuevo Ingreso', icon: 'pi pi-plus-circle', route: '/admin/check-in' },
+    { label: 'Registro de Órdenes', icon: 'pi pi-list', route: '/admin/orders' },
+    { label: 'Solicitudes', icon: 'pi pi-map-marker', route: '/admin/requests' },
+    { label: 'Configuración', icon: 'pi pi-cog', route: '/admin/config' },
+    { label: 'Reporte Diario', icon: 'pi pi-file-pdf', route: '/admin/daily-report' },
+  ]);
 
   ngOnInit() {
     this.checkStock();

@@ -1,9 +1,12 @@
 <div class="flex justify-center items-center min-h-screen bg-blue-50 dark:bg-gray-900">
     <p-toast></p-toast>
-    <p-card header="CarWash Pro" subheader="Iniciar Sesión" [style]="{ width: '360px' }" styleClass="shadow-lg">
+    <p-card [header]="brandService.businessName()" subheader="Iniciar Sesión" [style]="{ width: '360px' }"
+        styleClass="shadow-lg text-center">
         <ng-template pTemplate="header">
-            <div class="h-16 bg-blue-600 flex items-center justify-center rounded-t-xl">
-                <i class="pi pi-car text-4xl text-white"></i>
+            <div class="h-24 bg-blue-600 flex items-center justify-center rounded-t-xl p-4 overflow-hidden">
+                <img *ngIf="brandService.businessLogo()" [src]="brandService.businessLogo()"
+                    class="h-full w-auto object-contain drop-shadow-lg" alt="Logo">
+                <i *ngIf="!brandService.businessLogo()" class="pi pi-car text-5xl text-white"></i>
             </div>
         </ng-template>
 

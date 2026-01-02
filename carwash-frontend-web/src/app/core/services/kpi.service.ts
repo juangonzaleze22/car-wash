@@ -25,17 +25,17 @@ export interface AdminKPIs {
     totalPendingOrders: number;
     weeklyEarnings: number;
     weeklyOrders: number;
-    
+
     // Ingresos
     monthlyRevenue: number;
     monthlyOrders: number;
     dailyRevenue: number;
     dailyOrders: number;
-    
+
     // Ganancias netas del negocio
     netProfit: number;
     periodWasherEarnings: number;
-    
+
     // Gastos
     totalExpenses: number;
     totalExpensesCount: number;
@@ -46,12 +46,12 @@ export interface AdminKPIs {
         total: number;
         count: number;
     }>;
-    
+
     // Órdenes
     totalOrders: number;
     completedOrders: number;
     pendingOrders: number;
-    
+
     // Lavadores
     activeWashers: number;
     topWashers: Array<{
@@ -60,7 +60,7 @@ export interface AdminKPIs {
         totalEarnings: number;
         totalOrders: number;
     }>;
-    
+
     // Tiempo promedio
     avgTimePerOrder: number;
     avgTimeByWasher: Array<{
@@ -82,14 +82,14 @@ export interface AdminKPIs {
         serviceName: string;
         avgTimeMinutes: number;
     }>;
-    
+
     // Distribución
     earningsByStatus: Array<{
         status: string;
         total: number;
         count: number;
     }>;
-    
+
     // Estadísticas por categoría de vehículo
     servicesByCategory: Array<{
         categoryId: string;
@@ -113,6 +113,24 @@ export interface ChartData {
     expenses?: number[];
     netProfit?: number[];
     interval?: 'day' | 'week' | 'month'; // Intervalo de agregación usado
+}
+
+export interface WasherEfficiencyData {
+    services: string[];
+    washerAverages: number[];
+    globalAverages: number[];
+}
+
+export interface ClientChartData {
+    trend: {
+        dates: string[];
+        spending: number[];
+        visits: number[];
+    };
+    distribution: {
+        labels: string[];
+        values: number[];
+    };
 }
 
 @Injectable({
@@ -149,6 +167,19 @@ export class KPIService {
 
     getAdminChartData(startDate: Date, endDate: Date): Observable<ChartData> {
         return this.http.get<ChartData>(`${this.apiUrl}/admin/chart-data`, {
+            params: {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString()
+            }
+        });
+    }
+
+    getWasherEfficiencyData(): Observable<WasherEfficiencyData> {
+        return this.http.get<WasherEfficiencyData>(`${this.apiUrl}/washer/efficiency`);
+    }
+
+    getClientChartData(startDate: Date, endDate: Date): Observable<ClientChartData> {
+        return this.http.get<ClientChartData>(`${this.apiUrl}/client/chart-data`, {
             params: {
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString()

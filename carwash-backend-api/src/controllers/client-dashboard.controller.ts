@@ -83,10 +83,10 @@ export const getClientDashboard = async (req: AuthRequest, res: Response) => {
                             index === self.findIndex(w => w && washer && w.id === washer.id)
                         );
 
-                    // Calcular tiempo transcurrido
-                    const startTime = order.startedAt ? new Date(order.startedAt) : new Date(order.createdAt);
-                    const now = new Date();
-                    const elapsedMinutes = Math.max(0, Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60)));
+                    // Calcular tiempo transcurrido (solo si ya empezó)
+                    const elapsedMinutes = order.startedAt
+                        ? Math.max(0, Math.floor((new Date().getTime() - new Date(order.startedAt).getTime()) / (1000 * 60)))
+                        : 0;
 
                     return {
                         id: order.id,
@@ -262,7 +262,7 @@ export const getClientOrderDetails = async (req: AuthRequest, res: Response) => 
         // Verificar y completar automáticamente si está completamente pagada
         const { checkAndAutoCompleteOrder } = await import('../services/order.service');
         const wasCompleted = await checkAndAutoCompleteOrder(order.id);
-        
+
         // Si se completó, recargar la orden para obtener el estado actualizado
         if (wasCompleted) {
             const reloadedOrder = await prisma.order.findFirst({
@@ -309,7 +309,7 @@ export const getClientOrderDetails = async (req: AuthRequest, res: Response) => 
                     }
                 }
             });
-            
+
             // Si se encontró la orden recargada, usarla; si no, mantener la original
             if (reloadedOrder) {
                 order = reloadedOrder;

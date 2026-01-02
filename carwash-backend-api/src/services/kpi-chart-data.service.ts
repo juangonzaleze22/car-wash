@@ -28,7 +28,7 @@ export const getWasherEarningsChartData = async (washerId: string, startDate: Da
 
     // Agrupar por día
     const dailyData: { [key: string]: { date: string; total: number; pending: number; paid: number; count: number } } = {};
-    
+
     earnings.forEach(earning => {
         const date = new Date(earning.earnedAt).toISOString().split('T')[0];
         if (!dailyData[date]) {
@@ -72,7 +72,7 @@ export const getWasherEarningsChartData = async (washerId: string, startDate: Da
 const getAggregationInterval = (startDate: Date, endDate: Date): 'day' | 'week' | 'month' => {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays <= 7) return 'day';      // Hasta 7 días: por día
     if (diffDays <= 90) return 'week';    // Hasta 90 días: por semana
     return 'month';                        // Más de 90 días: por mes
@@ -193,13 +193,13 @@ export const getAdminChartData = async (startDate: Date, endDate: Date) => {
     Object.keys(earningsByPeriod).forEach(period => allPeriods.add(period));
     Object.keys(ordersByPeriod).forEach(period => allPeriods.add(period));
     Object.keys(expensesByPeriod).forEach(period => allPeriods.add(period));
-    
+
     // Rellenar períodos faltantes en el rango según el intervalo
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
         const key = getAggregationKey(new Date(currentDate), interval);
         allPeriods.add(key);
-        
+
         if (interval === 'day') {
             currentDate.setDate(currentDate.getDate() + 1);
         } else if (interval === 'week') {
@@ -214,7 +214,7 @@ export const getAdminChartData = async (startDate: Date, endDate: Date) => {
     const earningsData = periods.map(period => earningsByPeriod[period] || 0);
     const ordersData = periods.map(period => ordersByPeriod[period] || 0);
     const expensesData = periods.map(period => expensesByPeriod[period] || 0);
-    
+
     // Calcular ganancias netas por período (ingresos - gastos lavadores - gastos empresa)
     const netProfitData = periods.map(period => {
         const revenue = revenueByPeriod[period] || 0;
@@ -245,6 +245,124 @@ export const getAdminChartData = async (startDate: Date, endDate: Date) => {
         expenses: expensesData,
         netProfit: netProfitData,
         interval, // Informar al frontend qué intervalo se usó
+    };
+};
+
+/**
+ * Obtiene datos históricos de gasto para un cliente específico
+ */
+export const getClientChartData = async (clientId: string, startDate: Date, endDate: Date) => {
+    const orders = await prisma.order.findMany({
+        where: {
+            vehicle: { clientId },
+            status: 'COMPLETED',
+            closedAt: {
+                gte: startDate,
+                lte: endDate,
+            },
+        },
+        include: {
+            items: { include: { service: true } },
+        },
+        orderBy: {
+            closedAt: 'asc',
+        },
+    });
+
+    // 1. Tendencia de gasto
+    const interval = getAggregationInterval(startDate, endDate);
+    const spendingByPeriod: { [key: string]: number } = {};
+    const visitsByPeriod: { [key: string]: number } = {};
+
+    // 2. Distribución por categoría
+    const distributionByCategory: { [key: string]: number } = {};
+
+    orders.forEach(order => {
+        if (order.closedAt) {
+            const key = getAggregationKey(new Date(order.closedAt), interval);
+            spendingByPeriod[key] = (spendingByPeriod[key] || 0) + Number(order.totalAmount);
+            visitsByPeriod[key] = (visitsByPeriod[key] || 0) + 1;
+
+            order.items.forEach(item => {
+                const category = item.service.name; // O usar categoría real si existe
+                distributionByCategory[category] = (distributionByCategory[category] || 0) + 1;
+            });
+        }
+    });
+
+    const periods = Object.keys(spendingByPeriod).sort();
+    const spending = periods.map(p => spendingByPeriod[p]);
+    const visits = periods.map(p => visitsByPeriod[p]);
+
+    return {
+        trend: {
+            dates: periods,
+            spending,
+            visits,
+        },
+        distribution: {
+            labels: Object.keys(distributionByCategory),
+            values: Object.values(distributionByCategory),
+        }
+    };
+};
+
+/**
+ * Obtiene métricas de eficiencia comparativa para un lavador
+ */
+export const getWasherEfficiencyChartData = async (washerId: string) => {
+    // Obtener ítems completados por este lavador
+    const washerItems = await prisma.orderItem.findMany({
+        where: {
+            assignedWasherId: washerId,
+            order: { status: 'COMPLETED' }
+        },
+        include: {
+            service: true,
+            order: true
+        }
+    }) as any[];
+
+    // Agrupar duración por servicio para el lavador
+    const washerMetrics: { [key: string]: { total: number, count: number } } = {};
+    washerItems.forEach(item => {
+        if (item.order.duration) {
+            const serviceName = item.service.name;
+            if (!washerMetrics[serviceName]) washerMetrics[serviceName] = { total: 0, count: 0 };
+            washerMetrics[serviceName].total += item.order.duration;
+            washerMetrics[serviceName].count += 1;
+        }
+    });
+
+    // Obtener promedios globales por servicio
+    const globalItems = await prisma.orderItem.findMany({
+        where: {
+            order: { status: 'COMPLETED' },
+        },
+        include: {
+            service: true,
+            order: true
+        }
+    }) as any[];
+
+    const globalMetrics: { [key: string]: { total: number, count: number } } = {};
+    globalItems.forEach(item => {
+        if (item.order.duration) {
+            const serviceName = item.service.name;
+            if (!globalMetrics[serviceName]) globalMetrics[serviceName] = { total: 0, count: 0 };
+            globalMetrics[serviceName].total += item.order.duration;
+            globalMetrics[serviceName].count += 1;
+        }
+    });
+
+    const services = Object.keys(washerMetrics);
+    const washerAverages = services.map(s => Math.round(washerMetrics[s].total / washerMetrics[s].count / 60)); // Minutos
+    const globalAverages = services.map(s => Math.round((globalMetrics[s]?.total || 0) / (globalMetrics[s]?.count || 1) / 60));
+
+    return {
+        services,
+        washerAverages,
+        globalAverages
     };
 };
 

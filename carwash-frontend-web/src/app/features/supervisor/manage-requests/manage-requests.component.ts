@@ -448,9 +448,9 @@ export class RequestManagementComponent implements OnInit, AfterViewInit, OnDest
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
 
         const clientIcon = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/1177/1177810.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32]
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2776/2776067.png',
+            iconSize: [38, 38],
+            iconAnchor: [19, 38]
         });
 
         const mClient = L.marker(clientPos, { icon: clientIcon }).addTo(this.map).bindPopup('Ubicación del Cliente');
